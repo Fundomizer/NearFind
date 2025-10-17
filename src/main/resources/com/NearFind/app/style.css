@@ -1,0 +1,14 @@
+/* Note: top, right, bottom, left */
+#TopBar {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: transparent transparent rgba(0,0,0,0.25) transparent;
+    -fx-border-width: 0 0 1 0; /* 2px top border only */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, 5);
+}
+
+#BottomNavBar {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: rgba(0,0,0,0.25) transparent transparent transparent;
+    -fx-border-width: 1 0 0 0; /* 2px top border only */
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 8, 0, 0, -5);
+}
