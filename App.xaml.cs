@@ -1,4 +1,6 @@
-﻿namespace NearFind
+﻿using NearFind.Views;
+
+namespace NearFind
 {
     public partial class App : Application
     {
@@ -6,7 +8,7 @@
         {
             InitializeComponent();
 
-            MainPage = new AppShell();
+            MainPage = new MainLayoutPage();
         }
     }
 }
