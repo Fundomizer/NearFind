@@ -57,9 +57,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiImage Include="Resources\Images\Icons\cart_icon.png" />
-	  <MauiImage Include="Resources\Images\Icons\favourites_icon.png" />
+	  <None Remove="Resources\Images\Icons\chat_icon.png" />
+	  <None Remove="Resources\Images\Icons\map_icon.png" />
+	  <None Remove="Resources\Images\Icons\person_icon.png" />
+	  <None Remove="Resources\Images\Icons\search_icon.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <MauiImage Include="Resources\Images\Icons\chat_icon.png" />
 	  <MauiImage Include="Resources\Images\Icons\home_icon.png" />
+	  <MauiImage Include="Resources\Images\Icons\map_icon.png" />
+	  <MauiImage Include="Resources\Images\Icons\person_icon.png" />
+	  <MauiImage Include="Resources\Images\Icons\search_icon.png" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -69,14 +78,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiImage Include="Resources\Images\Icons\compare_icon.png" />
-	</ItemGroup>
-
-	<ItemGroup>
 	  <MauiXaml Update="Resources\Styles\MainLayoutStyle.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Resources\Styles\Styles.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\BotNavBar.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\MainLayoutPage.xaml">
