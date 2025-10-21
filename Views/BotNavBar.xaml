@@ -1,12 +1,37 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="NearFind.Views.BotNavBar">
-    <Grid ColumnDefinitions="*,*,*,*,*" Padding="10, 10, 10, 10" Background="White">
-        <ImageButton x:Name="HomeButton" Source="home_icon.png" Grid.Column="0"></ImageButton>
-        <ImageButton x:Name="SearchButton" Source="search_icon.png" Grid.Column="1"></ImageButton>
-        <ImageButton x:Name="MapButton" Source="map_icon.png" Grid.Column="2"></ImageButton>
-        <ImageButton x:Name="ChatButton" Source="chat_icon.png" Grid.Column="3"></ImageButton>
-        <ImageButton x:Name="MoreButton" Source="person_icon.png" Grid.Column="4"></ImageButton>
+             x:Class="NearFind.Views.BotNavBar"
+             >
+
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Resources/Styles/BotNavBarStyle.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+    <Grid ColumnDefinitions="*,*,*,*,*" Padding="15, 5" Background="White">
+        <VerticalStackLayout Grid.Column="0">
+            <ImageButton x:Name="HomeButton" Source="home_icon.png"></ImageButton>
+            <Label Text="Home"></Label>
+        </VerticalStackLayout>
+        <VerticalStackLayout Grid.Column="1">
+            <ImageButton x:Name="SearchButton" Source="search_icon.png"></ImageButton>
+            <Label Text="Search"></Label>
+        </VerticalStackLayout>
+        <VerticalStackLayout Grid.Column="2">
+            <ImageButton x:Name="MapButton" Source="map_icon.png"></ImageButton>
+            <Label Text="Map"></Label>
+        </VerticalStackLayout>
+        <VerticalStackLayout Grid.Column="3">
+            <ImageButton x:Name="ChatButton" Source="chat_icon.png"></ImageButton>
+            <Label Text="Chat"></Label>
+        </VerticalStackLayout>
+        <VerticalStackLayout Grid.Column="4">
+            <ImageButton x:Name="MoreButton" Source="person_icon.png"></ImageButton>
+            <Label Text="More"></Label>
+        </VerticalStackLayout>
     </Grid>
 </ContentView>

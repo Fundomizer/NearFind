@@ -57,18 +57,26 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\Images\Icons\best_local_prices_icon.png" />
 	  <None Remove="Resources\Images\Icons\chat_icon.png" />
+	  <None Remove="Resources\Images\Icons\location_pin_icon.png" />
 	  <None Remove="Resources\Images\Icons\map_icon.png" />
 	  <None Remove="Resources\Images\Icons\person_icon.png" />
+	  <None Remove="Resources\Images\Icons\reduce_food_waste_icon.png" />
 	  <None Remove="Resources\Images\Icons\search_icon.png" />
+	  <None Remove="Resources\Images\Icons\support_local_icon.png" />
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiImage Include="Resources\Images\Icons\best_local_prices_icon.png" />
 	  <MauiImage Include="Resources\Images\Icons\chat_icon.png" />
 	  <MauiImage Include="Resources\Images\Icons\home_icon.png" />
+	  <MauiImage Include="Resources\Images\Icons\location_pin_icon.png" />
 	  <MauiImage Include="Resources\Images\Icons\map_icon.png" />
 	  <MauiImage Include="Resources\Images\Icons\person_icon.png" />
+	  <MauiImage Include="Resources\Images\Icons\reduce_food_waste_icon.png" />
 	  <MauiImage Include="Resources\Images\Icons\search_icon.png" />
+	  <MauiImage Include="Resources\Images\Icons\support_local_icon.png" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -78,16 +86,31 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiXaml Update="Resources\Styles\BotNavBarStyle.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Resources\Styles\HomePageStyle.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Resources\Styles\MainLayoutStyle.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Resources\Styles\Styles.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Views\AIChatPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Views\BotNavBar.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
+	  <MauiXaml Update="Views\HomePage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Views\MainLayoutPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\SearchPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	</ItemGroup>

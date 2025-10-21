@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="NearFind.Views.HomePage">
+
+    <ContentView.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Resources/Styles/HomePageStyle.xaml"></ResourceDictionary>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentView.Resources>
+
+
+    <Grid RowDefinitions="Auto, *">
+        <!-- Top part -->
+        <Grid Grid.Row="0" RowDefinitions="Auto, Auto, Auto" ColumnDefinitions="*, *, *">
+
+            <Image Source="home_image_fallback.png" Grid.ColumnSpan="3" Grid.RowSpan="3" Aspect="AspectFit"></Image>
+
+            <VerticalStackLayout Grid.ColumnSpan="3" HorizontalOptions="Center">
+                <Image Source="near_find_logo.png" MaximumHeightRequest="100" MaximumWidthRequest="100"></Image>
+                <Label Text="Discover Good Deals Around the Corner" TextColor="White" FontSize="24" HorizontalTextAlignment="Center"></Label>
+            </VerticalStackLayout>
+
+            <Border Grid.Row="1" Grid.ColumnSpan="3" StrokeThickness="0" StrokeShape="RoundRectangle 20" Margin="10, 5">
+                <Grid ColumnDefinitions="Auto, *, Auto" BackgroundColor="White" Padding="15,10" VerticalOptions="Center" ColumnSpacing="5">
+                    <Image Source="location_pin_icon.png" Grid.Column="0" Aspect="AspectFit"></Image>
+                    <VerticalStackLayout Grid.Column="1">
+                        <Label Text="Your Location"></Label>
+                        <Label Text="Baguio, Philippines"></Label>
+                    </VerticalStackLayout>
+                    <Button Text="Change" Grid.Column="2"></Button>
+                </Grid>
+            </Border>
+
+        </Grid>
+
+        <!-- Center part -->
+
+        <Grid Grid.Row="1" BackgroundColor="White" RowDefinitions="Auto, *, Auto">
+            <Label Grid.Row="0"  Text="Why Choose NearFind?" HorizontalOptions="Center" FontSize="24" FontAttributes="Bold"></Label>
+
+            <ScrollView Grid.Row="1">
+
+                <VerticalStackLayout>
+
+                    <Border Stroke="#4A7C32" StrokeThickness="1" StrokeShape="RoundRectangle 10" Margin="10,5">
+                        <Grid ColumnDefinitions="Auto, *" VerticalOptions="Center" ColumnSpacing="20" Margin="15,5">
+                            <Image Source="best_local_prices_icon.png" Aspect="AspectFit" Grid.Column="0" MaximumHeightRequest="50"></Image>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Best Local Prices" FontSize="20" FontAttributes="Bold"></Label>
+                                <Label Text="Compare prices and find the best deals nearby."></Label>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+
+                    <Border Stroke="#4A7C32" StrokeThickness="1" StrokeShape="RoundRectangle 10" Margin="10,5">
+                        <Grid ColumnDefinitions="Auto, *" VerticalOptions="Center" ColumnSpacing="20" Margin="15,5">
+                            <Image Source="reduce_food_waste_icon.png" Aspect="AspectFit" Grid.Column="0" MaximumHeightRequest="50"></Image>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Reduce Food Waste" FontSize="20" FontAttributes="Bold"></Label>
+                                <Label Text="Time-limited discounts on fresh products."></Label>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+
+                    <Border Stroke="#4A7C32" StrokeThickness="1" StrokeShape="RoundRectangle 10" Margin="10,5">
+                        <Grid ColumnDefinitions="Auto, *" VerticalOptions="Center" ColumnSpacing="20" Margin="15,5">
+                            <Image Source="support_local_icon.png" Aspect="AspectFit" Grid.Column="0" MaximumHeightRequest="50"></Image>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Support Local" FontSize="20" FontAttributes="Bold"></Label>
+                                <Label Text="Help small businesses thrive."></Label>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <Border Grid.Row="2" BackgroundColor="#4A7C32" Margin="20, 5" Padding="10, 15" StrokeShape="RoundRectangle 10">
+
+                <VerticalStackLayout HorizontalOptions="Center" Spacing="10">
+                    <Label Text="Ready to discover local treasures?" TextColor="White" FontSize="24" HorizontalTextAlignment="Center"></Label>
+                    <Label Text="Join thousands saving money and supporting their community." TextColor="White" HorizontalTextAlignment="Center"></Label>
+                    <Button Text="Start Exploring Now" TextColor="#4A7C32" BackgroundColor="#FFFFFF"></Button>
+                </VerticalStackLayout>
+                
+            </Border>
+        </Grid>
+    </Grid>
+</ContentView>

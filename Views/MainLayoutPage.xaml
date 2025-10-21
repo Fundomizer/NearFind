@@ -13,12 +13,12 @@
         </ResourceDictionary>
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="*,100">
+    <Grid RowDefinitions="*,Auto">
 
         <!-- Main Content -->
-        <ContentView Grid.Row="0" BackgroundColor="Transparent" />
+        <view:HomePage Grid.Row="0"></view:HomePage>
 
-        <view:BotNavBar Grid.Row="1"></view:BotNavBar>
+        <view:BotNavBar Grid.Row="1" Margin="0"></view:BotNavBar>
         
     </Grid>
 </ContentPage>
