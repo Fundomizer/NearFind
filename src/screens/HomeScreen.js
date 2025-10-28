@@ -8,6 +8,9 @@ import MapScreen from '../screens/MapScreen';
 import ChatScreen from '../screens/ChatScreen';
 
 export default function HomeScreen() {
+
+    const navigation = useNavigation();
+
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
@@ -36,17 +39,19 @@ export default function HomeScreen() {
       {/* Feature Buttons */}
       <View style={styles.featureRow}>
         <TouchableOpacity style={[styles.featureButton, { backgroundColor: '#3C8D40' } ]
-      }>
+      } onPress={() => navigation.navigate('Search')}>
           <Icon name="search-outline" size={22} color="#fff" />
           <Text style={styles.featureText}>Search</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.featureButton, { backgroundColor: '#F9A825' }]}>
+        <TouchableOpacity style={[styles.featureButton, { backgroundColor: '#F9A825' }]}
+        onPress={() => navigation.navigate('Map')}>
           <Icon name="map-outline" size={22} color="#fff" />
           <Text style={styles.featureText}>Map</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.featureButton, { backgroundColor: '#F5F5F5' }]}>
+        <TouchableOpacity style={[styles.featureButton, { backgroundColor: '#F5F5F5' }]}
+        onPress={() => navigation.navigate('Chat')}>
           <Icon name="chatbubbles-outline" size={22} color="#555" />
           <Text style={[styles.featureText, { color: '#555' }]}>AI Chat</Text>
         </TouchableOpacity>
