@@ -41,14 +41,7 @@ export default function MapScreen() {
           style={[styles.marker, { top: marker.top, left: marker.left }]}
           onPress={() => handleMarkerPress(marker.id)}
         >
-          {marker.id === 6 ? (
-            <>
-              <View style={styles.highlightRing} />
-              <Icon name="location" size={40} color="#F9A825" />
-            </>
-          ) : (
-            <Icon name="location" size={40} color="#4CAF50" />
-          )}
+          <Icon name="location" size={40} color={marker.id === 6 ? "#F9A825" : "#4CAF50"} />
         </TouchableOpacity>
       ))}
 
@@ -158,15 +151,6 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  highlightRing: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(249, 168, 37, 0.3)',
-    borderWidth: 2,
-    borderColor: '#F9A825',
   },
   bottomBar: {
     position: 'absolute',
