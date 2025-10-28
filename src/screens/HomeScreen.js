@@ -1,6 +1,11 @@
 import React from 'react';
 import { StyleSheet, ScrollView, Image, View, TouchableOpacity, Text } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Ionicons';
+
+import SearchScreen from '../screens/SearchScreen';
+import MapScreen from '../screens/MapScreen';
+import ChatScreen from '../screens/ChatScreen';
 
 export default function HomeScreen() {
   return (
@@ -30,7 +35,8 @@ export default function HomeScreen() {
 
       {/* Feature Buttons */}
       <View style={styles.featureRow}>
-        <TouchableOpacity style={[styles.featureButton, { backgroundColor: '#3C8D40' }]}>
+        <TouchableOpacity style={[styles.featureButton, { backgroundColor: '#3C8D40' } ]
+      }>
           <Icon name="search-outline" size={22} color="#fff" />
           <Text style={styles.featureText}>Search</Text>
         </TouchableOpacity>
