@@ -10,6 +10,7 @@ export default function SearchScreen() {
     {
       id: 1,
       name: 'School Supply Kit',
+      shopName: 'Baguio School Supplies',
       price: 599.00,
       originalPrice: 750.00,
       discount: 20,
@@ -19,6 +20,7 @@ export default function SearchScreen() {
     {
       id: 2,
       name: 'Peanut Butter',
+      shopName: 'Manila Tantlaad Store',
       price: 149.00,
       originalPrice: null,
       discount: null,
@@ -28,6 +30,7 @@ export default function SearchScreen() {
     {
       id: 3,
       name: 'Artisan Sourdough Bread',
+      shopName: 'Artisan Bakery',
       price: 79.00,
       originalPrice: 120.00,
       discount: 35,
@@ -37,6 +40,7 @@ export default function SearchScreen() {
     {
       id: 4,
       name: 'Ube Jam',
+      shopName: 'Good Shepherd Convent',
       price: 199.00,
       originalPrice: null,
       discount: null,
@@ -46,6 +50,7 @@ export default function SearchScreen() {
     {
       id: 5,
       name: 'Lengua de Gato',
+      shopName: 'Baguio Pasalubong Center',
       price: 59.00,
       originalPrice: 120.00,
       discount: 50,
@@ -55,6 +60,7 @@ export default function SearchScreen() {
     {
       id: 6,
       name: 'Organic Honey',
+      shopName: 'Nature\'s Best',
       price: 129.00,
       originalPrice: null,
       discount: null,
@@ -120,6 +126,7 @@ export default function SearchScreen() {
                 )}
               </View>
               <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+              <Text style={styles.shopName} numberOfLines={1}>{product.shopName}</Text>
               {product.originalPrice ? (
                 <View style={styles.priceContainer}>
                   <Text style={styles.originalPrice}>₱{product.originalPrice.toFixed(2)}</Text>
@@ -283,11 +290,16 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   productName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#333',
+    marginBottom: 2,
+    lineHeight: 20,
+  },
+  shopName: {
+    fontSize: 12,
+    color: '#666',
     marginBottom: 4,
-    minHeight: 36,
   },
   priceContainer: {
     flexDirection: 'row',
