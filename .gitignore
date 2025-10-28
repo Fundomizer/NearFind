@@ -5,3 +5,4 @@
 /Platforms/*/bin/
 /Platforms/*/obj/
 /*.user
+node_modules
