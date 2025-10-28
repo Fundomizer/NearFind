@@ -7,8 +7,12 @@ export default function HomeScreen() {
     <ScrollView style={styles.container}>
       {/* Header */}
       <Image
-        source={require('../../assets/nearfind-logo.png')}
+        source={require('../../assets/images/baguio-header.jpeg')}
         style={styles.headerImage}
+      />
+      <Image
+        source={require('../../assets/nearfind-logo.png')}
+        style={styles.logoImage}
       />
       <View style={styles.overlay}>
         <Text style={styles.title}>Discover Good Deals{"\n"}Around the Corner</Text>
@@ -92,6 +96,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   headerImage: {
+    width: '100%',
+    height: 300,
+    justifyContent: 'center',
+    alignSelf: 'center',
+  },
+  logoImage: {
+    position: 'absolute',   // 👈 makes it float on top
+    top: '10%',              // 👈 moves it vertically (50% down)
+    left: '38%',             // 👈 moves it horizontally (50% across)
+    transform: [
+      { translateX: -50 },   // 👈 centers perfectly
+      { translateY: -50 },
+    ],
     width: '50%',
     height: 200,
     justifyContent: 'center',
@@ -100,10 +117,10 @@ const styles = StyleSheet.create({
   overlay: {
     alignItems: 'center',
     padding: 16,
-    marginTop: -80,
+    marginTop: -100,
   },
   title: {
-    fontSize: 20,
+    fontSize: 30,
     fontWeight: '600',
     textAlign: 'center',
     color: '#fff',
@@ -191,28 +208,30 @@ const styles = StyleSheet.create({
     margin: 16,
     padding: 20,
     alignItems: 'center',
+    backgroundColor: '#4CAF50',
+    borderRadius: 20,
   },
   ctaTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: 'white',
     textAlign: 'center',
     marginBottom: 6,
   },
   ctaSubtitle: {
     fontSize: 13,
-    color: '#666',
+    color: 'white',
     textAlign: 'center',
     marginBottom: 14,
   },
   ctaButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: 'white',
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 20,
   },
   ctaButtonText: {
-    color: '#fff',
+    color: 'black',
     fontWeight: '600',
   },
 });

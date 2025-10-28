@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Ionicons';
 
 // Import screens
@@ -12,6 +13,7 @@ import MoreScreen from '../screens/MoreScreen';
 const Tab = createBottomTabNavigator();
 
 export default function TabNavigator() {
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={{
@@ -19,8 +21,8 @@ export default function TabNavigator() {
         tabBarActiveTintColor: '#4CAF50',
         tabBarInactiveTintColor: '#888',
         tabBarStyle: {
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom, // Add bottom inset
+          paddingBottom: insets.bottom,
           paddingTop: 8,
           borderTopWidth: 1,
           borderTopColor: '#ddd',
