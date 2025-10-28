@@ -1,10 +1,8 @@
 import * as React from 'react';
 import { StyleSheet, ScrollView, Image, View, TouchableOpacity, Text } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from '@expo/vector-icons/Ionicons';
 
-export default function App() {
+export default function HomeScreen({navigation}) {
     return (
         <ScrollView>
             {/* Header */}
