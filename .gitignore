@@ -1,0 +1,8 @@
+/.vs
+/obj
+/bin
+/vscode
+/Platforms/*/bin/
+/Platforms/*/obj/
+/*.user
+/node_modules
