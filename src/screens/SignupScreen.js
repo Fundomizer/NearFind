@@ -5,24 +5,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { textStyle } from "../styles/TextStyles"
 import { useNavigation } from "@react-navigation/native";
 
-export default function LoginScreen() {
+export default function SignupScreen() {
 
     const navigation = useNavigation()
     const [email, setEmail] = useState();
     const [password, setPassword] = useState();
+    const [conpassword, setConPassword] = useState()
 
     const handleLogin = () => {
-
-        // Do authentication logic here
         console.log("Email:", email);
         console.log("password:", password);
-
-        // Change navigation
-        // navigation.navigate("Home") // TODO fix navigation, use one root navigator
+        console.log("password:", conpassword);
     }
 
-    const navigateSignup = () => {
-        navigation.navigate("Signup");
+    const navigateLogin = () => {
+        navigation.navigate("Login");
     }
 
     return (
@@ -43,19 +40,22 @@ export default function LoginScreen() {
 
                 <View style={styles.mainPanel}>
                     <View style={styles.panelBackground} />
-                    <Text style={textStyle.h2}>Login</Text>
+                    <Text style={textStyle.h2}>Sign up</Text>
                     <View>
                         <Text style={textStyle.normalText}>Email</Text>
                         <TextInput placeholder="Enter your email" style={[styles.textInput, textStyle.normalText]} onChange={setEmail}></TextInput>
                     </View>
-                    <Text style={textStyle.mutedText}>Forgot Password? <Text style={textStyle.linkText}>Click Here</Text></Text>
                     <View>
                         <Text style={textStyle.normalText}>Password</Text>
                         <TextInput placeholder="Enter your password" style={[styles.textInput, textStyle.normalText]} onChange={setPassword}></TextInput>
                     </View>
+                    <View>
+                        <Text style={textStyle.normalText}>Confirm password</Text>
+                        <TextInput placeholder="Re-enter password" style={[styles.textInput, textStyle.normalText]} onChange={setConPassword}></TextInput>
+                    </View>
                     <Text style={textStyle.linkText}>Terms and conditons</Text>
-                    <Button title="Login" onPress={handleLogin} />
-                    <Text style={textStyle.mutedText}>Don't have an account? <Text style={textStyle.linkText} onPress={navigateSignup}>Register here</Text></Text>
+                    <Button title="Sign up" onPress={handleLogin} />
+                    <Text style={textStyle.mutedText}>Already have an account? <Text style={textStyle.linkText} onPress={navigateLogin}>Login here</Text></Text>
                 </View>
             </KeyboardAwareScrollView>
         </SafeAreaView >
