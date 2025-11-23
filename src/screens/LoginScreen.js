@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, Text, TextInput, StyleSheet, Button, Image, KeyboardAvoidingView } from "react-native";
+import { View, Text, TextInput, StyleSheet, Button, Image } from "react-native";
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { textStyle } from "../styles/TextStyles"
 
@@ -15,28 +16,38 @@ export default function LoginScreen() {
 
     return (
         <SafeAreaView style={styles.mainContainer}>
-            <View style={styles.logoContainer}>
-                <Image source={require("../../assets/nearfind-logo.png")} style={styles.logo}></Image>
-                <Text style={textStyle.h1}>NearFind</Text>
-            </View>
+            <KeyboardAwareScrollView
+                style={styles.scrollView}
+                enableOnAndroid={true}
+                enableAutomaticScroll={true}
+                extraScrollHeight={20}
+                keyboardOpeningTime={0}
+                resetScrollToCoords={{ x: 0, y: 0 }}
+                contentContainerStyle={{ flexGrow: 1 }}
+            >
+                <View style={styles.logoContainer}>
+                    <Image source={require("../../assets/nearfind-logo.png")} style={styles.logo}></Image>
+                    <Text style={[textStyle.h1, { color: '#ffffffff' }]}>NearFind</Text>
+                </View>
 
-            <View style={styles.mainPanel}>
-                <View style={styles.panelBackground} />
-                <Text style={textStyle.h2}>Login page</Text>
-                <View>
-                    <Text style={textStyle.normalText}>Email</Text>
-                    <TextInput placeholder="Enter your email" style={[styles.textInput, textStyle.normalText]} onChange={setEmail}></TextInput>
+                <View style={styles.mainPanel}>
+                    <View style={styles.panelBackground} />
+                    <Text style={textStyle.h2}>Login page</Text>
+                    <View>
+                        <Text style={textStyle.normalText}>Email</Text>
+                        <TextInput placeholder="Enter your email" style={[styles.textInput, textStyle.normalText]} onChange={setEmail}></TextInput>
+                    </View>
+                    <Text style={textStyle.mutedText}>Forgot Password? <Text style={textStyle.linkText}>Click Here</Text></Text>
+                    <View>
+                        <Text style={textStyle.normalText}>Password</Text>
+                        <TextInput placeholder="Enter your password" style={[styles.textInput, textStyle.normalText]} onChange={setPassword}></TextInput>
+                    </View>
+                    <Text style={textStyle.linkText}>Terms and conditons</Text>
+                    <Button title="Login" onPress={handleLogin} />
+                    <Text style={textStyle.mutedText}>Don't have an account? <Text style={textStyle.linkText}>Register here</Text></Text>
                 </View>
-                <Text style={textStyle.mutedText}>Forgot Password? <Text style={textStyle.linkText}>Click Here</Text></Text>
-                <View>
-                    <Text style={textStyle.normalText}>Password</Text>
-                    <TextInput placeholder="Enter your password" style={[styles.textInput, textStyle.normalText]} onChange={setPassword}></TextInput>
-                </View>
-                <Text style={textStyle.linkText}>Terms and conditons</Text>
-                <Button title="Login" onPress={handleLogin} />
-                <Text style={textStyle.mutedText}>Don't have an account? <Text style={textStyle.linkText}>Register here</Text></Text>
-            </View>
-        </SafeAreaView>
+            </KeyboardAwareScrollView>
+        </SafeAreaView >
     )
 }
 
@@ -72,16 +83,16 @@ const styles = StyleSheet.create({
     },
     mainContainer: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
         backgroundColor: '#618D4C',
-        gap: 50
+    },
+    scrollView: {
+        backgroundColor: '#618D4C',
     },
     mainPanel: {
         flex: 7,
         minWidth: 400,
         gap: 10,
         paddingHorizontal: 40,
-        paddingVertical: 30
+        paddingVertical: 30,
     }
 })
