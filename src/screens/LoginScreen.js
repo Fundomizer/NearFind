@@ -5,7 +5,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { textStyle } from "../styles/TextStyles"
 import { useNavigation } from "@react-navigation/native";
 
-export default function LoginScreen() {
+/**
+ * 
+ * @param {function} setIsLoggedIn memory address of the "setIsLoggedIn"
+ * @returns 
+ */
+export default function LoginScreen({ setIsLoggedIn }) {
 
     const navigation = useNavigation()
     const [email, setEmail] = useState();
@@ -18,7 +23,7 @@ export default function LoginScreen() {
         console.log("password:", password);
 
         // Change navigation
-        // navigation.navigate("Home") // TODO fix navigation, use one root navigator
+        if (setIsLoggedIn) setIsLoggedIn(true);
     }
 
     const navigateSignup = () => {
