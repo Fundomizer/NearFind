@@ -12,7 +12,7 @@ export default function SignupScreen() {
     const [password, setPassword] = useState();
     const [conpassword, setConPassword] = useState()
 
-    const handleLogin = () => {
+    const handleSignup = () => {
         console.log("Email:", email);
         console.log("password:", password);
         console.log("password:", conpassword);
@@ -54,7 +54,7 @@ export default function SignupScreen() {
                         <TextInput placeholder="Re-enter password" style={[styles.textInput, textStyle.normalText]} onChange={setConPassword}></TextInput>
                     </View>
                     <Text style={textStyle.linkText}>Terms and conditons</Text>
-                    <Button title="Sign up" onPress={handleLogin} />
+                    <Button title="Sign up" onPress={handleSignup} />
                     <Text style={textStyle.mutedText}>Already have an account? <Text style={textStyle.linkText} onPress={navigateLogin}>Login here</Text></Text>
                 </View>
             </KeyboardAwareScrollView>

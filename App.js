@@ -7,7 +7,7 @@ import { useState } from 'react';
 
 export default function App() {
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // Change the value here to true to switch to TabNavigator by default
 
   return (
     <SafeAreaProvider>

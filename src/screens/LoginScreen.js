@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, TextInput, StyleSheet, Button, Image } from "react-native";
+import { View, Text, TextInput, StyleSheet, Button, Image, Alert, TouchableOpacity } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { textStyle } from "../styles/TextStyles"
@@ -13,16 +13,25 @@ import { useNavigation } from "@react-navigation/native";
 export default function LoginScreen({ setIsLoggedIn }) {
 
     const navigation = useNavigation()
-    const [email, setEmail] = useState();
-    const [password, setPassword] = useState();
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
 
     const handleLogin = () => {
+        console.log("Is this a string? idfk " + email);
+        console.log("Here's your password: " + password);
 
-        // Do authentication logic here
-        console.log("Email:", email);
-        console.log("password:", password);
+        if (!email && !password) {
+            Alert.alert("Error", "Please ensure that you have filled all inputs");
+            return;
+        }
 
-        // Change navigation
+        // Validate email
+        if (!email.includes("@")) {
+            Alert.alert("Error", "Please enter a valid email address");
+            return;
+        }
+
+        // set login to navigate to home
         if (setIsLoggedIn) setIsLoggedIn(true);
     }
 
@@ -51,12 +60,15 @@ export default function LoginScreen({ setIsLoggedIn }) {
                     <Text style={textStyle.h2}>Login</Text>
                     <View>
                         <Text style={textStyle.normalText}>Email</Text>
-                        <TextInput placeholder="Enter your email" style={[styles.textInput, textStyle.normalText]} onChange={setEmail}></TextInput>
+                        <TextInput placeholder="Enter your email" style={[styles.textInput, textStyle.normalText]} onChangeText={setEmail} keyboardType="email-address"></TextInput>
                     </View>
                     <Text style={textStyle.mutedText}>Forgot Password? <Text style={textStyle.linkText}>Click Here</Text></Text>
                     <View>
                         <Text style={textStyle.normalText}>Password</Text>
-                        <TextInput placeholder="Enter your password" style={[styles.textInput, textStyle.normalText]} onChange={setPassword}></TextInput>
+                        <TextInput
+                            placeholder="Enter your password" style={[styles.textInput, textStyle.normalText]} onChangeText={setPassword}
+                            secureTextEntry={true}>
+                        </TextInput>
                     </View>
                     <Text style={textStyle.linkText}>Terms and conditons</Text>
                     <Button title="Login" onPress={handleLogin} />
