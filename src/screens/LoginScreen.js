@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { View, Text, TextInput, StyleSheet, Button, Image, Alert, TouchableOpacity } from "react-native";
+import { View, Text, TextInput, StyleSheet, Button, Image, Alert, TouchableOpacity, ActivityIndicator } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { textStyle } from "../styles/TextStyles"
 import { useNavigation } from "@react-navigation/native";
+import { signIn } from "../services/authService";
 
 /**
  * 
@@ -15,12 +16,10 @@ export default function LoginScreen({ setIsLoggedIn }) {
     const navigation = useNavigation()
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = () => {
-        console.log("Is this a string? idfk " + email);
-        console.log("Here's your password: " + password);
-
-        if (!email && !password) {
+    const handleLogin = async () => {
+        if (!email || !password) {
             Alert.alert("Error", "Please ensure that you have filled all inputs");
             return;
         }
@@ -31,8 +30,18 @@ export default function LoginScreen({ setIsLoggedIn }) {
             return;
         }
 
-        // set login to navigate to home
-        if (setIsLoggedIn) setIsLoggedIn(true);
+        // Firebase authentication
+        setLoading(true);
+        const result = await signIn(email, password);
+        setLoading(false);
+
+        if (result.success) {
+            // Successfully logged in
+            if (setIsLoggedIn) setIsLoggedIn(true);
+        } else {
+            // Show error message
+            Alert.alert("Login Failed", result.error);
+        }
     }
 
     const navigateSignup = () => {
@@ -71,7 +80,11 @@ export default function LoginScreen({ setIsLoggedIn }) {
                         </TextInput>
                     </View>
                     <Text style={textStyle.linkText}>Terms and conditons</Text>
-                    <Button title="Login" onPress={handleLogin} />
+                    {loading ? (
+                        <ActivityIndicator size="large" color="#4CAF50" />
+                    ) : (
+                        <Button title="Login" onPress={handleLogin} />
+                    )}
                     <Text style={textStyle.mutedText}>Don't have an account? <Text style={textStyle.linkText} onPress={navigateSignup}>Register here</Text></Text>
                 </View>
             </KeyboardAwareScrollView>

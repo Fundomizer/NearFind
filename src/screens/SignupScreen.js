@@ -1,21 +1,58 @@
 import { useState } from "react";
-import { View, Text, TextInput, StyleSheet, Button, Image } from "react-native";
+import { View, Text, TextInput, StyleSheet, Button, Image, Alert, ActivityIndicator } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { textStyle } from "../styles/TextStyles"
 import { useNavigation } from "@react-navigation/native";
+import { signUp } from "../services/authService";
 
 export default function SignupScreen() {
 
     const navigation = useNavigation()
-    const [email, setEmail] = useState();
-    const [password, setPassword] = useState();
-    const [conpassword, setConPassword] = useState()
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [conpassword, setConPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleSignup = () => {
-        console.log("Email:", email);
-        console.log("password:", password);
-        console.log("password:", conpassword);
+    const handleSignup = async () => {
+        // Validation
+        if (!email || !password || !conpassword) {
+            Alert.alert("Error", "Please fill in all fields");
+            return;
+        }
+
+        // Validate email format
+        if (!email.includes("@")) {
+            Alert.alert("Error", "Please enter a valid email address");
+            return;
+        }
+
+        // Check if passwords match
+        if (password !== conpassword) {
+            Alert.alert("Error", "Passwords do not match");
+            return;
+        }
+
+        // Check password length
+        if (password.length < 6) {
+            Alert.alert("Error", "Password must be at least 6 characters long");
+            return;
+        }
+
+        // Firebase signup
+        setLoading(true);
+        const result = await signUp(email, password);
+        setLoading(false);
+
+        if (result.success) {
+            Alert.alert(
+                "Success",
+                "Account created successfully! Please login.",
+                [{ text: "OK", onPress: () => navigation.navigate("Login") }]
+            );
+        } else {
+            Alert.alert("Signup Failed", result.error);
+        }
     }
 
     const navigateLogin = () => {
@@ -43,18 +80,38 @@ export default function SignupScreen() {
                     <Text style={textStyle.h2}>Sign up</Text>
                     <View>
                         <Text style={textStyle.normalText}>Email</Text>
-                        <TextInput placeholder="Enter your email" style={[styles.textInput, textStyle.normalText]} onChange={setEmail}></TextInput>
+                        <TextInput
+                            placeholder="Enter your email"
+                            style={[styles.textInput, textStyle.normalText]}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                        />
                     </View>
                     <View>
                         <Text style={textStyle.normalText}>Password</Text>
-                        <TextInput placeholder="Enter your password" style={[styles.textInput, textStyle.normalText]} onChange={setPassword}></TextInput>
+                        <TextInput
+                            placeholder="Enter your password"
+                            style={[styles.textInput, textStyle.normalText]}
+                            onChangeText={setPassword}
+                            secureTextEntry={true}
+                        />
                     </View>
                     <View>
                         <Text style={textStyle.normalText}>Confirm password</Text>
-                        <TextInput placeholder="Re-enter password" style={[styles.textInput, textStyle.normalText]} onChange={setConPassword}></TextInput>
+                        <TextInput
+                            placeholder="Re-enter password"
+                            style={[styles.textInput, textStyle.normalText]}
+                            onChangeText={setConPassword}
+                            secureTextEntry={true}
+                        />
                     </View>
                     <Text style={textStyle.linkText}>Terms and conditons</Text>
-                    <Button title="Sign up" onPress={handleSignup} />
+                    {loading ? (
+                        <ActivityIndicator size="large" color="#4CAF50" />
+                    ) : (
+                        <Button title="Sign up" onPress={handleSignup} />
+                    )}
                     <Text style={textStyle.mutedText}>Already have an account? <Text style={textStyle.linkText} onPress={navigateLogin}>Login here</Text></Text>
                 </View>
             </KeyboardAwareScrollView>
