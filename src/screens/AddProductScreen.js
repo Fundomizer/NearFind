@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView,
 import Icon from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 
-export default function AddProductScreen({ onBack }) {
+export default function AddProductScreen({ onBack, onSaveProduct }) {
   const [productImage, setProductImage] = useState(null);
   const [label, setLabel] = useState('');
   const [originalPrice, setOriginalPrice] = useState('');
@@ -34,6 +34,17 @@ export default function AddProductScreen({ onBack }) {
       Alert.alert('Missing Information', 'Please fill in at least product image, label, and original price.');
       return;
     }
+    const product = {
+      id: Date.now().toString(),
+      image: productImage,
+      label,
+      originalPrice: parseFloat(originalPrice),
+      discountedPrice: discountedPrice ? parseFloat(discountedPrice) : null,
+      description,
+      status,
+      tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
+    };
+    onSaveProduct(product);
     Alert.alert('Success', 'Product saved successfully!', [
       { text: 'OK', onPress: () => onBack() }
     ]);

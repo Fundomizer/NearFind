@@ -10,6 +10,7 @@ export default function BusinessPlaceholderScreen() {
   const [promoImages, setPromoImages] = useState([]);
   const [activeTab, setActiveTab] = useState('home');
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [products, setProducts] = useState([]);
 
   const handleLogout = async () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -71,9 +72,40 @@ export default function BusinessPlaceholderScreen() {
     ]);
   };
 
+  const handleSaveProduct = (product) => {
+    setProducts([...products, product]);
+  };
+
+  const handleProductPress = (product) => {
+    const priceText = product.discountedPrice ? `${product.discountedPrice} (was ${product.originalPrice})` : `${product.originalPrice}`;
+    Alert.alert(product.label, `${priceText}\n\nStatus: ${product.status}\n\n${product.description}`);
+  };
+
+  const organizeProductsByTags = () => {
+    const tagGroups = {};
+    products.forEach(product => {
+      if (product.tags && product.tags.length > 0) {
+        product.tags.forEach(tag => {
+          if (!tagGroups[tag]) {
+            tagGroups[tag] = [];
+          }
+          tagGroups[tag].push(product);
+        });
+      } else {
+        if (!tagGroups['Uncategorized']) {
+          tagGroups['Uncategorized'] = [];
+        }
+        tagGroups['Uncategorized'].push(product);
+      }
+    });
+    return tagGroups;
+  };
+
   if (showAddProduct) {
-    return <AddProductScreen onBack={() => setShowAddProduct(false)} />;
+    return <AddProductScreen onBack={() => setShowAddProduct(false)} onSaveProduct={handleSaveProduct} />;
   }
+
+  const productsByTag = organizeProductsByTags();
 
   return (
     <View style={styles.container}>
@@ -107,6 +139,34 @@ export default function BusinessPlaceholderScreen() {
             </TouchableOpacity>
           </ScrollView>
         </View>
+        {Object.keys(productsByTag).map((tag) => (
+          <View key={tag} style={styles.promoSection}>
+            <Text style={styles.sectionTitle}>{tag.charAt(0).toUpperCase() + tag.slice(1)}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel} contentContainerStyle={styles.carouselContent}>
+              {productsByTag[tag].map((product) => (
+                <TouchableOpacity key={product.id} style={styles.productCard} onPress={() => handleProductPress(product)}>
+                  <Image source={{ uri: product.image }} style={styles.productImage} />
+                  <View style={styles.productInfo}>
+                    <Text style={styles.productName} numberOfLines={1}>{product.label}</Text>
+                    <View style={styles.priceContainer}>
+                      {product.discountedPrice ? (
+                        <>
+                          <Text style={styles.discountedPrice}>{product.discountedPrice}</Text>
+                          <Text style={styles.originalPriceStrike}>{product.originalPrice}</Text>
+                        </>
+                      ) : (
+                        <Text style={styles.productPrice}>{product.originalPrice}</Text>
+                      )}
+                    </View>
+                    <View style={[styles.statusBadge, product.status === 'available' ? styles.statusAvailable : product.status === 'out of stock' ? styles.statusOutOfStock : styles.statusPreOrder]}>
+                      <Text style={styles.statusText}>{product.status}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        ))}
       </ScrollView>
       <View style={styles.bottomNav}>
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveTab('home')}>
@@ -144,6 +204,19 @@ const styles = StyleSheet.create({
   carouselImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   uploadPlaceholder: { width: 280, height: 160, borderRadius: 12, backgroundColor: '#f5f5f5', borderWidth: 2, borderColor: '#e0e0e0', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
   uploadText: { marginTop: 8, fontSize: 14, color: '#999', fontWeight: '600' },
+  productCard: { width: 160, backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#e0e0e0' },
+  productImage: { width: '100%', height: 160, resizeMode: 'cover' },
+  productInfo: { padding: 12 },
+  productName: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 6 },
+  priceContainer: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  productPrice: { fontSize: 16, fontWeight: '700', color: '#4CAF50' },
+  discountedPrice: { fontSize: 16, fontWeight: '700', color: '#4CAF50' },
+  originalPriceStrike: { fontSize: 14, color: '#999', textDecorationLine: 'line-through' },
+  statusBadge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  statusAvailable: { backgroundColor: '#E8F5E9' },
+  statusOutOfStock: { backgroundColor: '#FFEBEE' },
+  statusPreOrder: { backgroundColor: '#FFF3E0' },
+  statusText: { fontSize: 11, fontWeight: '600', color: '#333', textTransform: 'uppercase' },
   bottomNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingVertical: 12, paddingBottom: 20, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#f0f0f0', shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 5 },
   navButton: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   addButton: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center', shadowColor: '#4CAF50', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 8 },
