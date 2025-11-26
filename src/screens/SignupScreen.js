@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { View, Text, TextInput, StyleSheet, Button, Image, Alert, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, StyleSheet, Button, Image, Alert, ActivityIndicator, TouchableOpacity } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { textStyle } from "../styles/TextStyles"
 import { useNavigation } from "@react-navigation/native";
 import { signUp } from "../services/authService";
+import Icon from '@expo/vector-icons/Ionicons';
 
 export default function SignupScreen() {
 
@@ -13,6 +14,7 @@ export default function SignupScreen() {
     const [password, setPassword] = useState('');
     const [conpassword, setConPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [userRole, setUserRole] = useState('customer'); // 'customer' or 'business'
 
     const handleSignup = async () => {
         // Validation
@@ -39,15 +41,15 @@ export default function SignupScreen() {
             return;
         }
 
-        // Firebase signup
+        // Firebase signup with role for both customer and business
         setLoading(true);
-        const result = await signUp(email, password);
+        const result = await signUp(email, password, userRole);
         setLoading(false);
 
         if (result.success) {
             Alert.alert(
                 "Success",
-                "Account created successfully! Please login.",
+                `${userRole === 'business' ? 'Business' : 'Customer'} account created successfully! Please login.`,
                 [{ text: "OK", onPress: () => navigation.navigate("Login") }]
             );
         } else {
@@ -106,6 +108,37 @@ export default function SignupScreen() {
                             secureTextEntry={true}
                         />
                     </View>
+                    <View>
+                        <Text style={textStyle.normalText}>I am signing up as:</Text>
+                        <View style={styles.roleSelector}>
+                            <TouchableOpacity
+                                style={[styles.roleButton, userRole === 'customer' && styles.roleButtonActive]}
+                                onPress={() => setUserRole('customer')}
+                            >
+                                <Icon
+                                    name="person"
+                                    size={24}
+                                    color={userRole === 'customer' ? '#fff' : '#4CAF50'}
+                                />
+                                <Text style={[styles.roleButtonText, userRole === 'customer' && styles.roleButtonTextActive]}>
+                                    Customer
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.roleButton, userRole === 'business' && styles.roleButtonActive]}
+                                onPress={() => setUserRole('business')}
+                            >
+                                <Icon
+                                    name="storefront"
+                                    size={24}
+                                    color={userRole === 'business' ? '#fff' : '#4CAF50'}
+                                />
+                                <Text style={[styles.roleButtonText, userRole === 'business' && styles.roleButtonTextActive]}>
+                                    Business
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                     <Text style={textStyle.linkText}>Terms and conditons</Text>
                     {loading ? (
                         <ActivityIndicator size="large" color="#4CAF50" />
@@ -162,5 +195,33 @@ const styles = StyleSheet.create({
         gap: 10,
         paddingHorizontal: 40,
         paddingVertical: 30,
-    }
+    },
+    roleSelector: {
+        flexDirection: 'row',
+        gap: 10,
+        marginTop: 8,
+    },
+    roleButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        padding: 15,
+        borderRadius: 25,
+        borderWidth: 2,
+        borderColor: '#4CAF50',
+        backgroundColor: '#fff',
+    },
+    roleButtonActive: {
+        backgroundColor: '#4CAF50',
+    },
+    roleButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#4CAF50',
+    },
+    roleButtonTextActive: {
+        color: '#fff',
+    },
 })
