@@ -3,14 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView,
 import Icon from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 
-export default function AddProductScreen({ onBack, onSaveProduct }) {
-  const [productImage, setProductImage] = useState(null);
-  const [label, setLabel] = useState('');
-  const [originalPrice, setOriginalPrice] = useState('');
-  const [discountedPrice, setDiscountedPrice] = useState('');
-  const [description, setDescription] = useState('');
-  const [status, setStatus] = useState('available');
-  const [tags, setTags] = useState('');
+export default function AddProductScreen({ onBack, onSaveProduct, editProduct }) {
+  const [productImage, setProductImage] = useState(editProduct?.image || null);
+  const [label, setLabel] = useState(editProduct?.label || '');
+  const [originalPrice, setOriginalPrice] = useState(editProduct?.originalPrice?.toString() || '');
+  const [discountedPrice, setDiscountedPrice] = useState(editProduct?.discountedPrice?.toString() || '');
+  const [description, setDescription] = useState(editProduct?.description || '');
+  const [status, setStatus] = useState(editProduct?.status || 'available');
+  const [tags, setTags] = useState(editProduct?.tags?.join(', ') || '');
+  const [quantity, setQuantity] = useState(editProduct?.quantity?.toString() || '0');
 
   const handleImageUpload = async () => {
     try {
@@ -35,7 +36,7 @@ export default function AddProductScreen({ onBack, onSaveProduct }) {
       return;
     }
     const product = {
-      id: Date.now().toString(),
+      id: editProduct?.id || Date.now().toString(),
       image: productImage,
       label,
       originalPrice: parseFloat(originalPrice),
@@ -43,9 +44,10 @@ export default function AddProductScreen({ onBack, onSaveProduct }) {
       description,
       status,
       tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
+      quantity: parseInt(quantity) || 0,
     };
     onSaveProduct(product);
-    Alert.alert('Success', 'Product saved successfully!', [
+    Alert.alert('Success', `Product ${editProduct ? 'updated' : 'saved'} successfully!`, [
       { text: 'OK', onPress: () => onBack() }
     ]);
   };
@@ -58,7 +60,7 @@ export default function AddProductScreen({ onBack, onSaveProduct }) {
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Product</Text>
+        <Text style={styles.headerTitle}>{editProduct ? 'Edit Product' : 'Add Product'}</Text>
         <View style={styles.placeholder} />
       </View>
       <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentContainer}>
@@ -85,6 +87,10 @@ export default function AddProductScreen({ onBack, onSaveProduct }) {
           <TextInput style={styles.input} placeholder="0.00" value={discountedPrice} onChangeText={setDiscountedPrice} keyboardType="numeric" placeholderTextColor="#999" />
         </View>
         <View style={styles.formSection}>
+          <Text style={styles.label}>Available Quantity</Text>
+          <TextInput style={styles.input} placeholder="0" value={quantity} onChangeText={setQuantity} keyboardType="numeric" placeholderTextColor="#999" />
+        </View>
+        <View style={styles.formSection}>
           <Text style={styles.label}>Description</Text>
           <TextInput style={[styles.input, styles.textArea]} placeholder="Enter product description" value={description} onChangeText={setDescription} multiline numberOfLines={4} textAlignVertical="top" placeholderTextColor="#999" />
         </View>
@@ -103,7 +109,7 @@ export default function AddProductScreen({ onBack, onSaveProduct }) {
           <TextInput style={styles.input} placeholder="e.g. snacks, drinks, supplies" value={tags} onChangeText={setTags} placeholderTextColor="#999" />
         </View>
         <TouchableOpacity style={styles.saveButton} onPress={handleSaveProduct}>
-          <Text style={styles.saveButtonText}>Save Product</Text>
+          <Text style={styles.saveButtonText}>{editProduct ? 'Update Product' : 'Save Product'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>

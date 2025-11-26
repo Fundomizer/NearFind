@@ -4,12 +4,15 @@ import Icon from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { logOut } from '../services/authService';
 import AddProductScreen from './AddProductScreen';
+import BusinessChatScreen from './BusinessChatScreen';
 
 export default function BusinessPlaceholderScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [promoImages, setPromoImages] = useState([]);
   const [activeTab, setActiveTab] = useState('home');
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
   const [products, setProducts] = useState([]);
 
   const handleLogout = async () => {
@@ -73,12 +76,57 @@ export default function BusinessPlaceholderScreen() {
   };
 
   const handleSaveProduct = (product) => {
-    setProducts([...products, product]);
+    if (editingProduct) {
+      setProducts(products.map(p => p.id === product.id ? product : p));
+      setEditingProduct(null);
+    } else {
+      setProducts([...products, product]);
+    }
   };
 
   const handleProductPress = (product) => {
-    const priceText = product.discountedPrice ? `${product.discountedPrice} (was ${product.originalPrice})` : `${product.originalPrice}`;
-    Alert.alert(product.label, `${priceText}\n\nStatus: ${product.status}\n\n${product.description}`);
+    Alert.alert(product.label, 'What would you like to do?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'View Details', onPress: () => {
+          const priceText = product.discountedPrice ? `${product.discountedPrice} (was ${product.originalPrice})` : `${product.originalPrice}`;
+          Alert.alert(product.label, `${priceText}\n\nQuantity: ${product.quantity}\nStatus: ${product.status}\n\n${product.description}`);
+        }
+      },
+      { text: 'Edit', onPress: () => {
+          setEditingProduct(product);
+          setShowAddProduct(true);
+        }
+      },
+      { text: 'Remove', style: 'destructive', onPress: () => {
+          Alert.alert('Remove Product', `Are you sure you want to remove "${product.label}"?`, [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Remove', style: 'destructive', onPress: () => {
+                setProducts(products.filter(p => p.id !== product.id));
+              }
+            },
+          ]);
+        }
+      },
+    ]);
+  };
+
+  const handleAddButtonPress = () => {
+    Alert.alert('Quick Actions', 'What would you like to do?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Change Logo', onPress: () => {
+          Alert.alert('Change Logo', 'Logo change functionality coming soon!');
+        }
+      },
+      { text: 'Change Pin Location', onPress: () => {
+          Alert.alert('Change Pin Location', 'Pin location change functionality coming soon!');
+        }
+      },
+      { text: 'Add New Item', onPress: () => {
+          setActiveTab('add');
+          setShowAddProduct(true);
+        }
+      },
+    ]);
   };
 
   const organizeProductsByTags = () => {
@@ -102,7 +150,11 @@ export default function BusinessPlaceholderScreen() {
   };
 
   if (showAddProduct) {
-    return <AddProductScreen onBack={() => setShowAddProduct(false)} onSaveProduct={handleSaveProduct} />;
+    return <AddProductScreen onBack={() => { setShowAddProduct(false); setEditingProduct(null); }} onSaveProduct={handleSaveProduct} editProduct={editingProduct} />;
+  }
+
+  if (showChat) {
+    return <BusinessChatScreen onBack={() => setShowChat(false)} />;
   }
 
   const productsByTag = organizeProductsByTags();
@@ -158,6 +210,7 @@ export default function BusinessPlaceholderScreen() {
                         <Text style={styles.productPrice}>{product.originalPrice}</Text>
                       )}
                     </View>
+                    <Text style={styles.quantityText}>Qty: {product.quantity}</Text>
                     <View style={[styles.statusBadge, product.status === 'available' ? styles.statusAvailable : product.status === 'out of stock' ? styles.statusOutOfStock : styles.statusPreOrder]}>
                       <Text style={styles.statusText}>{product.status}</Text>
                     </View>
@@ -172,12 +225,12 @@ export default function BusinessPlaceholderScreen() {
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveTab('home')}>
           <Icon name={activeTab === 'home' ? 'home' : 'home-outline'} size={28} color={activeTab === 'home' ? '#4CAF50' : '#999'} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => { setActiveTab('add'); setShowAddProduct(true); }}>
+        <TouchableOpacity style={styles.navButton} onPress={handleAddButtonPress}>
           <View style={styles.addButton}>
             <Icon name="add" size={32} color="#fff" />
           </View>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => setActiveTab('chat')}>
+        <TouchableOpacity style={styles.navButton} onPress={() => { setActiveTab('chat'); setShowChat(true); }}>
           <Icon name={activeTab === 'chat' ? 'chatbubble' : 'chatbubble-outline'} size={28} color={activeTab === 'chat' ? '#4CAF50' : '#999'} />
         </TouchableOpacity>
       </View>
@@ -208,10 +261,11 @@ const styles = StyleSheet.create({
   productImage: { width: '100%', height: 160, resizeMode: 'cover' },
   productInfo: { padding: 12 },
   productName: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 6 },
-  priceContainer: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  priceContainer: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   productPrice: { fontSize: 16, fontWeight: '700', color: '#4CAF50' },
   discountedPrice: { fontSize: 16, fontWeight: '700', color: '#4CAF50' },
   originalPriceStrike: { fontSize: 14, color: '#999', textDecorationLine: 'line-through' },
+  quantityText: { fontSize: 13, color: '#666', marginBottom: 6 },
   statusBadge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   statusAvailable: { backgroundColor: '#E8F5E9' },
   statusOutOfStock: { backgroundColor: '#FFEBEE' },
