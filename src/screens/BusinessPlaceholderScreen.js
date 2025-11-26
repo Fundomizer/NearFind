@@ -7,6 +7,7 @@ import { logOut } from '../services/authService';
 export default function BusinessPlaceholderScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [promoImages, setPromoImages] = useState([]);
+  const [activeTab, setActiveTab] = useState('home');
 
   const handleLogout = async () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -100,13 +101,20 @@ export default function BusinessPlaceholderScreen() {
             </TouchableOpacity>
           </ScrollView>
         </View>
-        <View style={styles.content}>
-          <Icon name="storefront" size={80} color="#4CAF50" />
-          <Text style={styles.title}>Business UI Placeholder</Text>
-          <Text style={styles.subtitle}>The business owner interface is coming soon.</Text>
-          <Text style={styles.description}>This area will contain features for managing your business, products, orders, and customer interactions.</Text>
-        </View>
       </ScrollView>
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.navButton} onPress={() => setActiveTab('home')}>
+          <Icon name={activeTab === 'home' ? 'home' : 'home-outline'} size={28} color={activeTab === 'home' ? '#4CAF50' : '#999'} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navButton} onPress={() => setActiveTab('add')}>
+          <View style={styles.addButton}>
+            <Icon name="add" size={32} color="#fff" />
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navButton} onPress={() => setActiveTab('chat')}>
+          <Icon name={activeTab === 'chat' ? 'chatbubble' : 'chatbubble-outline'} size={28} color={activeTab === 'chat' ? '#4CAF50' : '#999'} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -130,8 +138,7 @@ const styles = StyleSheet.create({
   carouselImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   uploadPlaceholder: { width: 280, height: 160, borderRadius: 12, backgroundColor: '#f5f5f5', borderWidth: 2, borderColor: '#e0e0e0', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
   uploadText: { marginTop: 8, fontSize: 14, color: '#999', fontWeight: '600' },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40, paddingVertical: 60 },
-  title: { fontSize: 24, fontWeight: '700', color: '#333', marginTop: 20, marginBottom: 12 },
-  subtitle: { fontSize: 16, color: '#666', marginBottom: 20, textAlign: 'center' },
-  description: { fontSize: 14, color: '#999', textAlign: 'center', lineHeight: 22 },
+  bottomNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingVertical: 12, paddingBottom: 20, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#f0f0f0', shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 5 },
+  navButton: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  addButton: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center', shadowColor: '#4CAF50', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 8 },
 });
