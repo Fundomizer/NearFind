@@ -11,15 +11,12 @@ export default function BusinessPlaceholderScreen() {
   const handleLogout = async () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
+      { text: 'Logout', style: 'destructive', onPress: async () => {
           const result = await logOut();
           if (!result.success) {
             Alert.alert('Error', 'Failed to logout. Please try again.');
           }
-        },
+        }
       },
     ]);
   };
@@ -39,6 +36,36 @@ export default function BusinessPlaceholderScreen() {
       console.error('Error picking image:', error);
       Alert.alert('Error', 'Failed to upload image. Please try again.');
     }
+  };
+
+  const handleImagePress = (index) => {
+    Alert.alert('Manage Image', 'What would you like to do with this image?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Replace', onPress: async () => {
+          try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              aspect: [16, 9],
+              quality: 0.8,
+            });
+            if (!result.canceled) {
+              const updatedImages = [...promoImages];
+              updatedImages[index] = result.assets[0].uri;
+              setPromoImages(updatedImages);
+            }
+          } catch (error) {
+            console.error('Error replacing image:', error);
+            Alert.alert('Error', 'Failed to replace image. Please try again.');
+          }
+        }
+      },
+      { text: 'Remove', style: 'destructive', onPress: () => {
+          const updatedImages = promoImages.filter((_, i) => i !== index);
+          setPromoImages(updatedImages);
+        }
+      },
+    ]);
   };
 
   return (
@@ -63,9 +90,9 @@ export default function BusinessPlaceholderScreen() {
           <Text style={styles.sectionTitle}>School Promo</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel} contentContainerStyle={styles.carouselContent}>
             {promoImages.map((image, index) => (
-              <View key={index} style={styles.carouselItem}>
+              <TouchableOpacity key={index} style={styles.carouselItem} onPress={() => handleImagePress(index)}>
                 <Image source={{ uri: image }} style={styles.carouselImage} />
-              </View>
+              </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.uploadPlaceholder} onPress={handleImageUpload}>
               <Icon name="cloud-upload-outline" size={40} color="#999" />
