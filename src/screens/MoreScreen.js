@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { logOut } from '../services/authService';
+import { useNavigation } from '@react-navigation/native';
 
 export default function MoreScreen() {
+  const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('Feed');
   const [likedReviews, setLikedReviews] = useState({});
 
@@ -39,6 +42,29 @@ export default function MoreScreen() {
       ...prev,
       [reviewId]: !prev[reviewId]
     }));
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await logOut();
+            if (!result.success) {
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -147,12 +173,23 @@ export default function MoreScreen() {
         </ScrollView>
       )}
 
-      {/* Vendor Dashboard Button */}
+      {/* Action Buttons */}
       <View style={styles.vendorSection}>
-        <TouchableOpacity style={styles.vendorButton}>
-          <View style={styles.vendorButtonContent}>
-            <Ionicons name="storefront-outline" size={20} color="#333" />
-            <Text style={styles.vendorButtonText}>Vendor Dashboard</Text>
+        <TouchableOpacity
+          style={styles.reservationsButton}
+          onPress={() => navigation.navigate('Market', { screen: 'Reservations' })}
+        >
+          <View style={styles.reservationsButtonContent}>
+            <Ionicons name="calendar" size={20} color="#4CAF50" />
+            <Text style={styles.reservationsButtonText}>My Reservations</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#4CAF50" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <View style={styles.logoutButtonContent}>
+            <Ionicons name="log-out-outline" size={20} color="#FF5252" />
+            <Text style={styles.logoutButtonText}>Logout</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -217,29 +254,57 @@ const styles = StyleSheet.create({
   vendorSection: {
     paddingHorizontal: 20,
     paddingVertical: 10,
+    gap: 10,
   },
-  vendorButton: {
+  reservationsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: '#fff',
     paddingVertical: 14,
+    paddingHorizontal: 16,
     borderRadius: 12,
-    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#4CAF50',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  vendorButtonContent: {
+  reservationsButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  vendorButtonText: {
+  reservationsButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: '#4CAF50',
+  },
+  logoutButton: {
+    backgroundColor: '#fff',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#FF5252',
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  logoutButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FF5252',
   },
   feedContent: {
     flex: 1,

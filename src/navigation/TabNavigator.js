@@ -5,8 +5,8 @@ import Icon from '@expo/vector-icons/Ionicons';
 
 // Import screens
 import HomeScreen from '../screens/HomeScreen';
-import SearchScreen from '../screens/SearchScreen';
-import MapScreen from '../screens/MapScreen';
+import SearchStackNavigator from './SearchStackNavigator';
+import ReservationsScreen from '../screens/ReservationsScreen';
 import ChatScreen from '../screens/ChatScreen';
 import MoreScreen from '../screens/MoreScreen';
 
@@ -49,20 +49,20 @@ export default function TabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Search"
-        component={SearchScreen}
+        name="Market"
+        component={SearchStackNavigator}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Icon name="search" size={size} color={color} />
+            <Icon name="basket" size={size} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="Map"
-        component={MapScreen}
+        name="Reservations"
+        component={ReservationsScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Icon name="map" size={size} color={color} />
+            <Icon name="calendar" size={size} color={color} />
           ),
         }}
       />
