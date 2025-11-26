@@ -3,11 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView,
 import Icon from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { logOut } from '../services/authService';
+import AddProductScreen from './AddProductScreen';
 
 export default function BusinessPlaceholderScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [promoImages, setPromoImages] = useState([]);
   const [activeTab, setActiveTab] = useState('home');
+  const [showAddProduct, setShowAddProduct] = useState(false);
 
   const handleLogout = async () => {
     Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -69,6 +71,10 @@ export default function BusinessPlaceholderScreen() {
     ]);
   };
 
+  if (showAddProduct) {
+    return <AddProductScreen onBack={() => setShowAddProduct(false)} />;
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -106,7 +112,7 @@ export default function BusinessPlaceholderScreen() {
         <TouchableOpacity style={styles.navButton} onPress={() => setActiveTab('home')}>
           <Icon name={activeTab === 'home' ? 'home' : 'home-outline'} size={28} color={activeTab === 'home' ? '#4CAF50' : '#999'} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton} onPress={() => setActiveTab('add')}>
+        <TouchableOpacity style={styles.navButton} onPress={() => { setActiveTab('add'); setShowAddProduct(true); }}>
           <View style={styles.addButton}>
             <Icon name="add" size={32} color="#fff" />
           </View>
