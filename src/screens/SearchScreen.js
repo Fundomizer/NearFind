@@ -4,6 +4,9 @@ import Icon from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
 import { getProducts } from '../services/firestoreService';
 import { useNavigation } from '@react-navigation/native';
+import { addToFavorites, removeFromFavorites, subscribeToFavorites } from '../services/favoritesService';
+import { db } from '../config/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 export default function SearchScreen() {
   const navigation = useNavigation();
@@ -21,6 +24,7 @@ export default function SearchScreen() {
   const [minDiscount, setMinDiscount] = useState(0); // percentage
   const [priceRange, setPriceRange] = useState([0, 1000]); // PHP
   const [sortBy, setSortBy] = useState('distance'); // distance, price, discount
+  const [favoritedProducts, setFavoritedProducts] = useState(new Set());
 
   // Image mapping for local assets
   const imageMap = {
@@ -50,10 +54,46 @@ export default function SearchScreen() {
     })();
   }, []);
 
-  // Fetch products from Firestore
+  // Subscribe to real-time products updates
   useEffect(() => {
-    fetchProducts();
+    const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
+      const productsData = [];
+      snapshot.forEach((doc) => {
+        productsData.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Calculate distance if user location is available
+      let productsWithDistance = productsData;
+      if (userLocation) {
+        productsWithDistance = productsData.map(product => ({
+          ...product,
+          distance: calculateDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            product.latitude,
+            product.longitude
+          )
+        }));
+      }
+
+      setProducts(productsWithDistance);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [userLocation]);
+
+  // Subscribe to user's favorites
+  useEffect(() => {
+    const unsubscribe = subscribeToFavorites((favorites) => {
+      const favoriteProductIds = new Set(favorites.map(fav => fav.productId));
+      setFavoritedProducts(favoriteProductIds);
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -182,6 +222,25 @@ export default function SearchScreen() {
 
   const handleProductPress = (product) => {
     navigation.navigate('ProductDetails', { product });
+  };
+
+  const toggleFavorite = async (product, event) => {
+    // Prevent product card press event
+    event.stopPropagation();
+
+    const isFavorited = favoritedProducts.has(product.id);
+
+    if (isFavorited) {
+      const result = await removeFromFavorites(product.id);
+      if (!result.success) {
+        Alert.alert('Error', 'Failed to remove from favorites');
+      }
+    } else {
+      const result = await addToFavorites(product);
+      if (!result.success) {
+        Alert.alert('Error', 'Failed to add to favorites');
+      }
+    }
   };
 
   // Get unique shops from products
@@ -316,6 +375,16 @@ export default function SearchScreen() {
                       <Text style={styles.discountText}>-{product.discount}%</Text>
                     </View>
                   )}
+                  <TouchableOpacity
+                    style={styles.favoriteIconButton}
+                    onPress={(e) => toggleFavorite(product, e)}
+                  >
+                    <Icon
+                      name={favoritedProducts.has(product.id) ? "heart" : "heart-outline"}
+                      size={20}
+                      color={favoritedProducts.has(product.id) ? "#E91E63" : "#fff"}
+                    />
+                  </TouchableOpacity>
                 </View>
                 <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
                 <Text style={styles.shopName} numberOfLines={1}>{product.shopName}</Text>
@@ -708,6 +777,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#fff',
+  },
+  favoriteIconButton: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   productName: {
     fontSize: 16,

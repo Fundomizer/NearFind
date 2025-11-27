@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator, Modal, FlatList } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
 import { createReservation } from '../services/reservationService';
 
 export default function ReservationConfirmScreen({ route, navigation }) {
   const { product, quantity } = route.params;
   const [loading, setLoading] = useState(false);
+  const [selectedPickupTime, setSelectedPickupTime] = useState(null);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   // Image mapping for local assets
   const imageMap = {
@@ -24,11 +26,69 @@ export default function ReservationConfirmScreen({ route, navigation }) {
     return null;
   };
 
+  // Parse store hours (e.g., "8:00 AM - 5:00 PM")
+  const parseStoreHours = (hours) => {
+    if (!hours) return { start: 8, end: 17 }; // Default 8 AM - 5 PM
+
+    const parts = hours.split(' - ');
+    if (parts.length !== 2) return { start: 8, end: 17 };
+
+    const parseTime = (timeStr) => {
+      const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (!match) return null;
+
+      let hour = parseInt(match[1]);
+      const period = match[3].toUpperCase();
+
+      if (period === 'PM' && hour !== 12) hour += 12;
+      if (period === 'AM' && hour === 12) hour = 0;
+
+      return hour;
+    };
+
+    return {
+      start: parseTime(parts[0]) || 8,
+      end: parseTime(parts[1]) || 17
+    };
+  };
+
+  // Generate available time slots within store hours
+  const generateTimeSlots = () => {
+    const { start, end } = parseStoreHours(product.shopHours);
+    const slots = [];
+
+    for (let hour = start; hour < end; hour++) {
+      const period = hour >= 12 ? 'PM' : 'AM';
+      const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+      slots.push({
+        value: hour,
+        label: `${displayHour}:00 ${period}`,
+        displayLabel: `${displayHour}:00 ${period}`
+      });
+
+      // Add half-hour slot if not the last hour
+      if (hour < end - 1) {
+        slots.push({
+          value: hour + 0.5,
+          label: `${displayHour}:30 ${period}`,
+          displayLabel: `${displayHour}:30 ${period}`
+        });
+      }
+    }
+
+    return slots;
+  };
+
   const totalPrice = product.price * quantity;
 
   const handleConfirmReservation = async () => {
+    if (!selectedPickupTime) {
+      Alert.alert('Pickup Time Required', 'Please select a pickup time for your reservation.');
+      return;
+    }
+
     setLoading(true);
-    const result = await createReservation(product, quantity);
+    const result = await createReservation(product, quantity, selectedPickupTime);
     setLoading(false);
 
     if (result.success) {
@@ -130,12 +190,24 @@ export default function ReservationConfirmScreen({ route, navigation }) {
                 </Text>
               </View>
             </View>
-            <View style={styles.pickupRow}>
+            <TouchableOpacity
+              style={styles.pickupRow}
+              onPress={() => setShowTimePicker(true)}
+            >
               <Icon name="time" size={20} color="#4CAF50" />
               <View style={styles.pickupInfo}>
                 <Text style={styles.pickupLabel}>Pickup Time</Text>
-                <Text style={styles.pickupValue}>Within 24 hours</Text>
+                <Text style={[styles.pickupValue, !selectedPickupTime && styles.pickupPlaceholder]}>
+                  {selectedPickupTime || 'Select pickup time'}
+                </Text>
               </View>
+              <Icon name="chevron-forward" size={20} color="#999" />
+            </TouchableOpacity>
+            <View style={styles.storeHoursRow}>
+              <Icon name="information-circle-outline" size={16} color="#666" />
+              <Text style={styles.storeHoursText}>
+                Store Hours: {product.shopHours || 'Not available'}
+              </Text>
             </View>
           </View>
         </View>
@@ -190,6 +262,54 @@ export default function ReservationConfirmScreen({ route, navigation }) {
           )}
         </TouchableOpacity>
       </View>
+
+      {/* Time Picker Modal */}
+      <Modal
+        visible={showTimePicker}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowTimePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Pickup Time</Text>
+              <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                <Icon name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={generateTimeSlots()}
+              keyExtractor={(item) => item.label}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.timeSlot,
+                    selectedPickupTime === item.label && styles.selectedTimeSlot
+                  ]}
+                  onPress={() => {
+                    setSelectedPickupTime(item.label);
+                    setShowTimePicker(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.timeSlotText,
+                      selectedPickupTime === item.label && styles.selectedTimeSlotText
+                    ]}
+                  >
+                    {item.displayLabel}
+                  </Text>
+                  {selectedPickupTime === item.label && (
+                    <Icon name="checkmark" size={20} color="#4CAF50" />
+                  )}
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -401,6 +521,66 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  pickupPlaceholder: {
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  storeHoursRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  storeHoursText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  timeSlot: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  selectedTimeSlot: {
+    backgroundColor: '#E8F5E9',
+  },
+  timeSlotText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedTimeSlotText: {
+    color: '#4CAF50',
     fontWeight: '600',
   },
 });

@@ -1,34 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
-import { getUserReservations, cancelReservation } from '../services/reservationService';
+import { subscribeToReservations, cancelReservation } from '../services/reservationService';
 
 export default function ReservationsScreen({ navigation }) {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'history'
 
   useEffect(() => {
-    loadReservations();
-  }, []);
+    // Subscribe to real-time reservation updates
+    const unsubscribe = subscribeToReservations((updatedReservations) => {
+      setReservations(updatedReservations);
+      setLoading(false);
+    });
 
-  const loadReservations = async () => {
-    setLoading(true);
-    const result = await getUserReservations();
-    if (result.success) {
-      setReservations(result.data);
-    } else {
-      Alert.alert('Error', 'Failed to load reservations');
+    if (!unsubscribe) {
+      setLoading(false);
     }
-    setLoading(false);
-  };
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadReservations();
-    setRefreshing(false);
-  };
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
 
   const handleCancelReservation = (reservationId, productName) => {
     Alert.alert(
@@ -46,9 +40,9 @@ export default function ReservationsScreen({ navigation }) {
             const result = await cancelReservation(reservationId);
             if (result.success) {
               Alert.alert('Success', 'Reservation cancelled successfully');
-              loadReservations();
+              // No need to manually refresh - real-time listener will update automatically
             } else {
-              Alert.alert('Error', 'Failed to cancel reservation');
+              Alert.alert('Error', result.error || 'Failed to cancel reservation');
             }
           },
         },
@@ -150,9 +144,7 @@ export default function ReservationsScreen({ navigation }) {
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Reservations</Text>
-        <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
-          <Icon name="refresh" size={24} color="#333" />
-        </TouchableOpacity>
+        <View style={styles.placeholder} />
       </View>
 
       {/* Tabs */}
@@ -176,12 +168,7 @@ export default function ReservationsScreen({ navigation }) {
       </View>
 
       {/* Content */}
-      <ScrollView
-        style={styles.content}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#4CAF50']} />
-        }
-      >
+      <ScrollView style={styles.content}>
         {displayReservations.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Icon
@@ -243,6 +230,13 @@ export default function ReservationsScreen({ navigation }) {
                     <Text style={styles.detailLabel}>Total:</Text>
                     <Text style={styles.detailValue}>₱{reservation.totalPrice.toFixed(2)}</Text>
                   </View>
+                  {reservation.pickupTime && (
+                    <View style={styles.detailRow}>
+                      <Icon name="time-outline" size={16} color="#666" />
+                      <Text style={styles.detailLabel}>Pickup Time:</Text>
+                      <Text style={styles.detailValue}>{reservation.pickupTime}</Text>
+                    </View>
+                  )}
                   <View style={styles.detailRow}>
                     <Icon name="calendar-outline" size={16} color="#666" />
                     <Text style={styles.detailLabel}>Reserved:</Text>

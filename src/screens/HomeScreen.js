@@ -4,6 +4,9 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
 import { getProducts } from '../services/firestoreService';
+import { subscribeToFavorites } from '../services/favoritesService';
+import { db } from '../config/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window');
 
@@ -17,6 +20,8 @@ export default function HomeScreen() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userLocation, setUserLocation] = useState(null);
+    const [favoriteProducts, setFavoriteProducts] = useState([]);
+    const [favoritesLoading, setFavoritesLoading] = useState(true);
 
     // Image mapping for local assets
     const imageMap = {
@@ -34,10 +39,63 @@ export default function HomeScreen() {
         getUserLocation();
     }, []);
 
-    // Fetch products
+    // Subscribe to real-time products updates
     useEffect(() => {
-        fetchProducts();
+        const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
+            const productsData = [];
+            snapshot.forEach((doc) => {
+                productsData.push({ id: doc.id, ...doc.data() });
+            });
+
+            let productsWithDistance = productsData;
+
+            if (userLocation) {
+                productsWithDistance = productsData.map(product => ({
+                    ...product,
+                    distance: calculateDistance(
+                        userLocation.latitude,
+                        userLocation.longitude,
+                        product.latitude,
+                        product.longitude
+                    )
+                }));
+
+                productsWithDistance.sort((a, b) => a.distance - b.distance);
+            } else {
+                productsWithDistance = productsData.map(product => ({
+                    ...product,
+                    distance: 0
+                }));
+            }
+
+            setProducts(productsWithDistance);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
     }, [userLocation]);
+
+    // Subscribe to user's favorites
+    useEffect(() => {
+        setFavoritesLoading(true);
+        const unsubscribe = subscribeToFavorites(async (favorites) => {
+            // Get full product details for favorited items
+            const favoriteProductIds = favorites.map(fav => fav.productId);
+            const allProducts = await getProducts();
+
+            if (allProducts.success) {
+                const favProducts = allProducts.data.filter(product =>
+                    favoriteProductIds.includes(product.id)
+                );
+                setFavoriteProducts(favProducts);
+            }
+            setFavoritesLoading(false);
+        });
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, []);
 
     const getUserLocation = async () => {
         try {
@@ -119,47 +177,61 @@ export default function HomeScreen() {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status === 'granted') {
                 setIsLoadingLocation(true);
-                const location = await Location.getCurrentPositionAsync({});
 
-                // Reverse geocode to get neighborhood/street name
-                const [geocode] = await Location.reverseGeocodeAsync({
+                // Get current position with high accuracy
+                const location = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.High,
+                });
+
+                // Reverse geocode to get address
+                const geocodeResults = await Location.reverseGeocodeAsync({
                     latitude: location.coords.latitude,
                     longitude: location.coords.longitude,
                 });
 
-                if (geocode) {
-                    // Build location string with neighborhood details
+                if (geocodeResults && geocodeResults.length > 0) {
+                    const geocode = geocodeResults[0];
+
+                    // Build location string - prioritize city-level info for consistency
                     const parts = [];
 
-                    // Add street/neighborhood (most specific)
-                    if (geocode.street) {
-                        parts.push(geocode.street);
-                    } else if (geocode.name) {
-                        parts.push(geocode.name);
+                    // Prefer city, then district/subregion for more stable location display
+                    if (geocode.city) {
+                        parts.push(geocode.city);
                     } else if (geocode.district) {
                         parts.push(geocode.district);
                     } else if (geocode.subregion) {
                         parts.push(geocode.subregion);
                     }
 
-                    // Add city
-                    if (geocode.city) {
-                        parts.push(geocode.city);
-                    } else if (geocode.region) {
+                    // Add region/country if no city found
+                    if (parts.length === 0 && geocode.region) {
                         parts.push(geocode.region);
                     }
 
-                    // Format: "Session Road, Baguio City" or "Downtown, Manila"
+                    // Add country for context
+                    if (geocode.country) {
+                        parts.push(geocode.country);
+                    }
+
                     const locationString = parts.length > 0
                         ? parts.join(', ')
-                        : 'Location detected';
+                        : 'Current Location';
 
                     setCurrentLocation(locationString);
+                    console.log('Location updated:', locationString);
+                } else {
+                    setCurrentLocation('Current Location');
                 }
+
+                setIsLoadingLocation(false);
+            } else {
+                Alert.alert('Permission Denied', 'Location permission is required to use this feature');
                 setIsLoadingLocation(false);
             }
         } catch (error) {
             console.log('Location error:', error);
+            Alert.alert('Error', 'Failed to get current location. Please try again.');
             setIsLoadingLocation(false);
         }
     };
@@ -180,8 +252,17 @@ export default function HomeScreen() {
     };
 
     const handleUseCurrentLocation = async () => {
-        setShowLocationModal(false);
-        await getCurrentLocation();
+        try {
+            setIsLoadingLocation(true);
+            setShowLocationModal(false);
+
+            await getCurrentLocation();
+
+            Alert.alert('Success', 'Location updated to your current location');
+        } catch (error) {
+            console.log('Error getting location:', error);
+            setIsLoadingLocation(false);
+        }
     };
 
     const handleProductPress = (product) => {
@@ -272,12 +353,20 @@ export default function HomeScreen() {
         </View>
 
         {/* Location Bar */}
-        <TouchableOpacity style={styles.locationBar} onPress={handleChangeLocation}>
+        <TouchableOpacity
+          style={styles.locationBar}
+          onPress={handleChangeLocation}
+          disabled={isLoadingLocation}
+        >
           <Icon name="location" size={20} color="#4CAF50" />
           <Text style={styles.locationBarText} numberOfLines={1}>
             {isLoadingLocation ? 'Getting location...' : currentLocation}
           </Text>
-          <Icon name="chevron-down" size={20} color="#666" />
+          {isLoadingLocation ? (
+            <ActivityIndicator size="small" color="#4CAF50" />
+          ) : (
+            <Icon name="chevron-down" size={20} color="#666" />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -310,26 +399,49 @@ export default function HomeScreen() {
               />
             </View>
 
-            {/* Nearby Products */}
+            {/* Favorites */}
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleContainer}>
-                  <Icon name="location" size={20} color="#4CAF50" />
-                  <Text style={styles.sectionTitle}>Near You</Text>
+                  <Icon name="heart" size={20} color="#E91E63" />
+                  <Text style={styles.sectionTitle}>My Favorites</Text>
                 </View>
-                <TouchableOpacity onPress={() => navigation.navigate('Market')}>
-                  <Text style={styles.seeAllText}>See All</Text>
-                </TouchableOpacity>
+                {favoriteProducts.length > 6 && (
+                  <TouchableOpacity onPress={() => navigation.navigate('Market')}>
+                    <Text style={styles.seeAllText}>See All</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-              <FlatList
-                data={products.slice(0, 6)}
-                renderItem={renderProductCard}
-                keyExtractor={(item) => item.id}
-                numColumns={2}
-                scrollEnabled={false}
-                columnWrapperStyle={styles.productRow}
-                contentContainerStyle={styles.productsGrid}
-              />
+              {favoritesLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="small" color="#4CAF50" />
+                  <Text style={styles.loadingText}>Loading favorites...</Text>
+                </View>
+              ) : favoriteProducts.length > 0 ? (
+                <FlatList
+                  data={favoriteProducts.slice(0, 6)}
+                  renderItem={renderProductCard}
+                  keyExtractor={(item) => item.id}
+                  numColumns={2}
+                  scrollEnabled={false}
+                  columnWrapperStyle={styles.productRow}
+                  contentContainerStyle={styles.productsGrid}
+                />
+              ) : (
+                <View style={styles.emptyFavorites}>
+                  <Icon name="heart-outline" size={60} color="#ccc" />
+                  <Text style={styles.emptyFavoritesTitle}>No Favorites Yet</Text>
+                  <Text style={styles.emptyFavoritesText}>
+                    Tap the heart icon on products to add them to your favorites
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.browseFavoritesButton}
+                    onPress={() => navigation.navigate('Market')}
+                  >
+                    <Text style={styles.browseFavoritesButtonText}>Browse Products</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </>
         ) : (
@@ -515,7 +627,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#333',
-    marginBottom: 12,
   },
   sectionTitleContainer: {
     flexDirection: 'row',
@@ -795,5 +906,36 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     fontSize: 16,
+  },
+  emptyFavorites: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+  },
+  emptyFavoritesTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyFavoritesText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  browseFavoritesButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  browseFavoritesButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

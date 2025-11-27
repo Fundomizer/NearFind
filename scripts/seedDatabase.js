@@ -46,39 +46,6 @@ const shops = [
     rating: 4.5,
     tags: ["School Supplies", "Office Supplies"],
     description: "Complete school and office supplies"
-  },
-  {
-    name: "Artisan Bakery Baguio",
-    address: "Upper Session Road, Baguio City",
-    latitude: 16.4150,
-    longitude: 120.5975,
-    phone: "+63 74 442 5678",
-    hours: "6:00 AM - 8:00 PM",
-    rating: 4.7,
-    tags: ["Bakery", "Fresh Bread", "Pastries"],
-    description: "Fresh artisan bread baked daily"
-  },
-  {
-    name: "Manila Tantlaad Store",
-    address: "Magsaysay Avenue, Baguio City",
-    latitude: 16.4100,
-    longitude: 120.5920,
-    phone: "+63 74 442 9876",
-    hours: "8:00 AM - 7:00 PM",
-    rating: 4.3,
-    tags: ["Grocery", "Local Products"],
-    description: "Local grocery and delicacies"
-  },
-  {
-    name: "Baguio Honey House",
-    address: "Km 5 Asin Road, Baguio City",
-    latitude: 16.4200,
-    longitude: 120.6000,
-    phone: "+63 74 442 3456",
-    hours: "7:00 AM - 6:00 PM",
-    rating: 4.9,
-    tags: ["Honey", "Organic", "Local Products"],
-    description: "Pure local honey and organic products"
   }
 ];
 
@@ -94,20 +61,8 @@ const products = [
     category: "Food",
     description: "Premium purple yam jam made from local ube. Perfect for bread, desserts, or as a gift.",
     inStock: true,
-    stockQuantity: 8,
+    stockQuantity: 5,
     imageUrl: "ube_jam.jpg"
-  },
-  {
-    name: "Strawberry Jam (350g)",
-    shopName: "Good Shepherd Convent",
-    price: 150,
-    originalPrice: null,
-    discount: null,
-    category: "Food",
-    description: "Made from fresh Baguio strawberries. No preservatives.",
-    inStock: true,
-    stockQuantity: 12,
-    imageUrl: "strawberry_jam.jpg"
   },
   {
     name: "Lengua de Gato Cookies",
@@ -118,8 +73,20 @@ const products = [
     category: "Food",
     description: "Crispy buttery cookies, a Baguio favorite pasalubong.",
     inStock: true,
-    stockQuantity: 5,
+    stockQuantity: 3,
     imageUrl: "lengua.jpg"
+  },
+  {
+    name: "Organic Peanut Butter (500g)",
+    shopName: "Good Shepherd Convent",
+    price: 149,
+    originalPrice: null,
+    discount: null,
+    category: "Food",
+    description: "Locally made organic peanut butter. No added sugar.",
+    inStock: true,
+    stockQuantity: 8,
+    imageUrl: "peanut_butter.jpg"
   },
 
   // School Supplies
@@ -132,208 +99,20 @@ const products = [
     category: "School Supplies",
     description: "Complete set: notebooks, pens, pencils, ruler, eraser, sharpener, and folder.",
     inStock: true,
-    stockQuantity: 15,
+    stockQuantity: 10,
     imageUrl: "school_supplies.jpg"
   },
   {
-    name: "Premium Notebook Set (5pcs)",
-    shopName: "Baguio School Supplies",
-    price: 250,
-    originalPrice: null,
-    discount: null,
-    category: "School Supplies",
-    description: "High-quality spiral notebooks with 100 pages each.",
-    inStock: true,
-    stockQuantity: 9,
-    imageUrl: "notebooks.jpg"
-  },
-  {
-    name: "Art Supply Bundle",
-    shopName: "Baguio School Supplies",
-    price: 450,
-    originalPrice: 600,
-    discount: 25,
-    category: "School Supplies",
-    description: "Colored pencils, crayons, watercolor, and sketch pad.",
-    inStock: true,
-    stockQuantity: 3,
-    imageUrl: "art_supplies.jpg"
-  },
-
-  // Bakery Products
-  {
-    name: "Artisan Sourdough Bread",
-    shopName: "Artisan Bakery Baguio",
-    price: 79,
-    originalPrice: 120,
-    discount: 35,
-    category: "Food",
-    description: "Freshly baked sourdough with crispy crust. Best before 6PM!",
-    inStock: true,
-    stockQuantity: 7,
-    imageUrl: "sour_dough_bread.jpg"
-  },
-  {
-    name: "Pan de Sal (12pcs)",
-    shopName: "Artisan Bakery Baguio",
-    price: 40,
-    originalPrice: null,
-    discount: null,
-    category: "Food",
-    description: "Traditional Filipino bread rolls, baked fresh daily.",
-    inStock: true,
-    stockQuantity: 14,
-    imageUrl: "pandesal.jpg"
-  },
-  {
-    name: "Ensaymada (6pcs)",
-    shopName: "Artisan Bakery Baguio",
-    price: 120,
-    originalPrice: 150,
-    discount: 20,
-    category: "Food",
-    description: "Buttery brioche with sugar and cheese topping.",
-    inStock: true,
-    stockQuantity: 6,
-    imageUrl: "ensaymada.jpg"
-  },
-
-  // Grocery Items
-  {
-    name: "Organic Peanut Butter (500g)",
-    shopName: "Manila Tantlaad Store",
-    price: 149,
-    originalPrice: null,
-    discount: null,
-    category: "Food",
-    description: "Locally made organic peanut butter. No added sugar.",
-    inStock: true,
-    stockQuantity: 11,
-    imageUrl: "peanut_butter.jpg"
-  },
-  {
-    name: "Baguio Coffee Beans (250g)",
-    shopName: "Manila Tantlaad Store",
-    price: 280,
-    originalPrice: 350,
-    discount: 20,
-    category: "Food",
-    description: "Premium Arabica coffee beans grown in Benguet.",
-    inStock: true,
-    stockQuantity: 4,
-    imageUrl: "coffee.jpg"
-  },
-  {
-    name: "Fresh Vegetables Bundle",
-    shopName: "Manila Tantlaad Store",
-    price: 200,
-    originalPrice: 250,
-    discount: 20,
-    category: "Food",
-    description: "Lettuce, tomatoes, carrots, and potatoes. Farm fresh!",
-    inStock: true,
-    stockQuantity: 13,
-    imageUrl: "vegetables.jpg"
-  },
-
-  // Honey Products
-  {
     name: "Pure Baguio Honey (500ml)",
-    shopName: "Baguio Honey House",
+    shopName: "Baguio School Supplies",
     price: 350,
     originalPrice: null,
     discount: null,
     category: "Food",
     description: "100% pure honey from local bee farms. Raw and unprocessed.",
     inStock: true,
-    stockQuantity: 10,
+    stockQuantity: 7,
     imageUrl: "honey.jpg"
-  },
-  {
-    name: "Honey Gift Set (3x250ml)",
-    shopName: "Baguio Honey House",
-    price: 600,
-    originalPrice: 750,
-    discount: 20,
-    category: "Food",
-    description: "Gift set with 3 varieties: wildflower, eucalyptus, and sunflower honey.",
-    inStock: true,
-    stockQuantity: 2,
-    imageUrl: "honey_gift.jpg"
-  },
-  {
-    name: "Honeycomb (250g)",
-    shopName: "Baguio Honey House",
-    price: 400,
-    originalPrice: 500,
-    discount: 20,
-    category: "Food",
-    description: "Natural honeycomb straight from the hive. Rich and pure.",
-    inStock: true,
-    stockQuantity: 1,
-    imageUrl: "honeycomb.jpg"
-  },
-
-  // Additional variety
-  {
-    name: "Baguio Strawberry (1kg)",
-    shopName: "Good Shepherd Convent",
-    price: 300,
-    originalPrice: 400,
-    discount: 25,
-    category: "Food",
-    description: "Fresh strawberries picked this morning. Limited stock!",
-    inStock: true,
-    stockQuantity: 6,
-    imageUrl: "strawberries.jpg"
-  },
-  {
-    name: "Peanut Brittle (300g)",
-    shopName: "Good Shepherd Convent",
-    price: 120,
-    originalPrice: null,
-    discount: null,
-    category: "Food",
-    description: "Crunchy peanut candy. Great pasalubong!",
-    inStock: true,
-    stockQuantity: 15,
-    imageUrl: "peanut_brittle.jpg"
-  },
-  {
-    name: "Calculator (Scientific)",
-    shopName: "Baguio School Supplies",
-    price: 350,
-    originalPrice: 450,
-    discount: 22,
-    category: "School Supplies",
-    description: "Casio scientific calculator for students.",
-    inStock: true,
-    stockQuantity: 8,
-    imageUrl: "calculator.jpg"
-  },
-  {
-    name: "Banana Bread Loaf",
-    shopName: "Artisan Bakery Baguio",
-    price: 90,
-    originalPrice: 120,
-    discount: 25,
-    category: "Food",
-    description: "Moist banana bread with walnuts. Baked this morning.",
-    inStock: true,
-    stockQuantity: 11,
-    imageUrl: "banana_bread.jpg"
-  },
-  {
-    name: "Local Rice (5kg)",
-    shopName: "Manila Tantlaad Store",
-    price: 250,
-    originalPrice: null,
-    discount: null,
-    category: "Food",
-    description: "Premium rice from Benguet farms.",
-    inStock: true,
-    stockQuantity: 9,
-    imageUrl: "rice.jpg"
   }
 ];
 
@@ -383,6 +162,7 @@ async function seedDatabase() {
         shopId: shopIds[product.shopName],
         latitude: shop.latitude,
         longitude: shop.longitude,
+        shopHours: shop.hours,
         createdAt: new Date().toISOString()
       });
       console.log(`   ✅ Added: ${product.name} (${product.shopName})`);

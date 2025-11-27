@@ -59,6 +59,13 @@ export const sendMessage = async (conversationId, shopName, messageText, sender 
       return { success: false, error: 'User not authenticated' };
     }
 
+    // Verify the conversationId belongs to the current user
+    // conversationId format: {userId}_{shopId}
+    if (!conversationId.startsWith(user.uid + '_')) {
+      console.error('User does not have access to this conversation');
+      return { success: false, error: 'Access denied to this conversation' };
+    }
+
     const messageData = {
       conversationId,
       text: messageText,
@@ -92,6 +99,19 @@ export const sendMessage = async (conversationId, shopName, messageText, sender 
 // Get all messages for a conversation (real-time listener)
 export const subscribeToMessages = (conversationId, callback) => {
   try {
+    const user = auth.currentUser;
+    if (!user) {
+      console.error('User not authenticated');
+      return null;
+    }
+
+    // Verify the conversationId belongs to the current user
+    // conversationId format: {userId}_{shopId}
+    if (!conversationId.startsWith(user.uid + '_')) {
+      console.error('User does not have access to this conversation');
+      return null;
+    }
+
     const messagesRef = collection(db, 'conversations', conversationId, 'messages');
     const q = query(messagesRef, orderBy('timestamp', 'asc'));
 
@@ -124,8 +144,7 @@ export const getUserConversations = async () => {
 
     const q = query(
       collection(db, 'conversations'),
-      where('userId', '==', user.uid),
-      orderBy('lastMessageTime', 'desc')
+      where('userId', '==', user.uid)
     );
 
     const querySnapshot = await getDocs(q);
@@ -136,6 +155,13 @@ export const getUserConversations = async () => {
         id: doc.id,
         ...doc.data(),
       });
+    });
+
+    // Sort by lastMessageTime on the client side
+    conversations.sort((a, b) => {
+      const timeA = a.lastMessageTime?.toMillis ? a.lastMessageTime.toMillis() : 0;
+      const timeB = b.lastMessageTime?.toMillis ? b.lastMessageTime.toMillis() : 0;
+      return timeB - timeA;
     });
 
     return { success: true, data: conversations };
@@ -155,8 +181,7 @@ export const subscribeToConversations = (callback) => {
 
     const q = query(
       collection(db, 'conversations'),
-      where('userId', '==', user.uid),
-      orderBy('lastMessageTime', 'desc')
+      where('userId', '==', user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -167,6 +192,14 @@ export const subscribeToConversations = (callback) => {
           ...doc.data(),
         });
       });
+
+      // Sort by lastMessageTime on the client side
+      conversations.sort((a, b) => {
+        const timeA = a.lastMessageTime?.toMillis ? a.lastMessageTime.toMillis() : 0;
+        const timeB = b.lastMessageTime?.toMillis ? b.lastMessageTime.toMillis() : 0;
+        return timeB - timeA;
+      });
+
       callback(conversations);
     });
 
@@ -180,6 +213,17 @@ export const subscribeToConversations = (callback) => {
 // Mark conversation as read
 export const markConversationAsRead = async (conversationId) => {
   try {
+    const user = auth.currentUser;
+    if (!user) {
+      return { success: false, error: 'User not authenticated' };
+    }
+
+    // Verify the conversationId belongs to the current user
+    if (!conversationId.startsWith(user.uid + '_')) {
+      console.error('User does not have access to this conversation');
+      return { success: false, error: 'Access denied to this conversation' };
+    }
+
     const conversationRef = doc(db, 'conversations', conversationId);
     await updateDoc(conversationRef, {
       unreadCount: 0,

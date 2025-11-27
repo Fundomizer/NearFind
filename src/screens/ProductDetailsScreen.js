@@ -1,14 +1,26 @@
-import { useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, Image, TouchableOpacity, Linking } from 'react-native';
+import { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, ScrollView, Image, TouchableOpacity, Linking, Alert } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
+import { addToFavorites, removeFromFavorites, isFavorite } from '../services/favoritesService';
+import { db } from '../config/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 export default function ProductDetailsScreen({ route, navigation }) {
-  const { product } = route.params;
+  const { product: initialProduct } = route.params;
+  const [product, setProduct] = useState(initialProduct);
   const [quantity, setQuantity] = useState(1);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+
+  // Reset product state when initialProduct changes (navigating to different product)
+  useEffect(() => {
+    setProduct(initialProduct);
+    setQuantity(1); // Reset quantity to 1 for new product
+  }, [initialProduct.id]);
 
   // Image mapping for local assets
   const imageMap = {
-    'school supplies.jpg': require('../../assets/images/products/school supplies.jpg'),
+    'school_supplies.jpg': require('../../assets/images/products/school supplies.jpg'),
     'peanut_butter.jpg': require('../../assets/images/products/peanut butter.jpg'),
     'sour_dough_bread.jpg': require('../../assets/images/products/sour dough bread.jpg'),
     'ube_jam.jpg': require('../../assets/images/products/ube jam.jpg'),
@@ -30,11 +42,20 @@ export default function ProductDetailsScreen({ route, navigation }) {
 
   const handleContactShop = () => {
     // Navigate to Chat tab and then to individual chat screen
+    // Use shopId if available, otherwise use shopName as unique identifier
+    const uniqueShopId = product.shopId || product.shopName.replace(/\s+/g, '_').toLowerCase();
+
+    console.log('Contact shop clicked:', {
+      shopName: product.shopName,
+      shopId: product.shopId,
+      uniqueShopId: uniqueShopId
+    });
+
     navigation.getParent()?.navigate('Chat', {
       screen: 'IndividualChat',
       params: {
         shopName: product.shopName,
-        shopId: product.id,
+        shopId: uniqueShopId,
       },
     });
   };
@@ -62,6 +83,84 @@ export default function ProductDetailsScreen({ route, navigation }) {
     });
   };
 
+  // Check if product is favorited when component mounts
+  useEffect(() => {
+    checkFavoriteStatus();
+  }, [product.id]);
+
+  // Subscribe to real-time product updates for stock changes
+  useEffect(() => {
+    if (!initialProduct.id) return;
+
+    console.log('Setting up real-time listener for product:', initialProduct.id);
+
+    const productRef = doc(db, 'products', initialProduct.id);
+    const unsubscribe = onSnapshot(productRef, (doc) => {
+      if (doc.exists()) {
+        const updatedData = doc.data();
+        console.log('Product update received:', {
+          productId: initialProduct.id,
+          productName: updatedData.name,
+          oldStock: product.stockQuantity,
+          newStock: updatedData.stockQuantity,
+          inStock: updatedData.inStock
+        });
+
+        // Update product state with new stock quantity and inStock status
+        setProduct(prev => ({
+          ...prev,
+          stockQuantity: updatedData.stockQuantity,
+          inStock: updatedData.inStock
+        }));
+
+        // Adjust quantity if it exceeds new stock
+        if (updatedData.stockQuantity < quantity) {
+          setQuantity(Math.max(1, updatedData.stockQuantity));
+        }
+      }
+    });
+
+    return () => {
+      console.log('Cleaning up real-time listener for product:', initialProduct.id);
+      unsubscribe();
+    };
+  }, [initialProduct.id]);
+
+  const checkFavoriteStatus = async () => {
+    const result = await isFavorite(product.id);
+    if (result.success) {
+      setIsFavorited(result.isFavorite);
+    }
+  };
+
+  const toggleFavorite = async () => {
+    if (favoriteLoading) return;
+
+    setFavoriteLoading(true);
+
+    if (isFavorited) {
+      // Remove from favorites
+      const result = await removeFromFavorites(product.id);
+      if (result.success) {
+        setIsFavorited(false);
+        Alert.alert('Removed', 'Product removed from favorites');
+      } else {
+        Alert.alert('Error', result.error || 'Failed to remove from favorites');
+      }
+    } else {
+      // Add to favorites
+      const result = await addToFavorites(product);
+      if (result.success) {
+        setIsFavorited(true);
+        Alert.alert('Added', 'Product added to favorites');
+      } else {
+        Alert.alert('Error', result.error || 'Failed to add to favorites');
+      }
+    }
+
+    setFavoriteLoading(false);
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -70,8 +169,16 @@ export default function ProductDetailsScreen({ route, navigation }) {
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Product Details</Text>
-        <TouchableOpacity style={styles.favoriteButton}>
-          <Icon name="heart-outline" size={24} color="#333" />
+        <TouchableOpacity
+          style={styles.favoriteButton}
+          onPress={toggleFavorite}
+          disabled={favoriteLoading}
+        >
+          <Icon
+            name={isFavorited ? "heart" : "heart-outline"}
+            size={24}
+            color={isFavorited ? "#E91E63" : "#333"}
+          />
         </TouchableOpacity>
       </View>
 
@@ -181,6 +288,13 @@ export default function ProductDetailsScreen({ route, navigation }) {
                 {product.distance > 0 ? `${product.distance} km from you` : 'Distance unavailable'}
               </Text>
             </View>
+
+            {product.shopHours && (
+              <View style={styles.shopDetail}>
+                <Icon name="time-outline" size={16} color="#666" />
+                <Text style={styles.shopDetailText}>{product.shopHours}</Text>
+              </View>
+            )}
 
             <View style={styles.shopActions}>
               <TouchableOpacity style={styles.directionsButton} onPress={openMaps}>

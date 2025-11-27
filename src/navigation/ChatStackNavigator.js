@@ -8,6 +8,7 @@ const Stack = createNativeStackNavigator();
 export default function ChatStackNavigator() {
   return (
     <Stack.Navigator
+      initialRouteName="ChatList"
       screenOptions={{
         headerShown: false,
       }}
