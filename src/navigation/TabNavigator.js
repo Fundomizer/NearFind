@@ -7,7 +7,7 @@ import Icon from '@expo/vector-icons/Ionicons';
 import HomeScreen from '../screens/HomeScreen';
 import SearchStackNavigator from './SearchStackNavigator';
 import ReservationsScreen from '../screens/ReservationsScreen';
-import ChatScreen from '../screens/ChatScreen';
+import ChatStackNavigator from './ChatStackNavigator';
 import MoreScreen from '../screens/MoreScreen';
 
 const Tab = createBottomTabNavigator();
@@ -68,7 +68,7 @@ export default function TabNavigator() {
       />
       <Tab.Screen
         name="Chat"
-        component={ChatScreen}
+        component={ChatStackNavigator}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Icon name="chatbubble-ellipses" size={size} color={color} />
@@ -76,11 +76,11 @@ export default function TabNavigator() {
         }}
       />
       <Tab.Screen
-        name="More"
+        name="Account"
         component={MoreScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Icon name="person" size={size} color={color} />
+            <Icon name="person-circle" size={size} color={color} />
           ),
         }}
       />

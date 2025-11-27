@@ -28,6 +28,17 @@ export default function ProductDetailsScreen({ route, navigation }) {
     Linking.openURL(url);
   };
 
+  const handleContactShop = () => {
+    // Navigate to Chat tab and then to individual chat screen
+    navigation.getParent()?.navigate('Chat', {
+      screen: 'IndividualChat',
+      params: {
+        shopName: product.shopName,
+        shopId: product.id,
+      },
+    });
+  };
+
   const maxStock = product.stockQuantity || 99; // Default to 99 if no stock quantity specified
 
   const incrementQuantity = () => {
@@ -74,9 +85,14 @@ export default function ProductDetailsScreen({ route, navigation }) {
               <Icon name="image-outline" size={80} color="#ccc" />
             </View>
           )}
-          {product.discount && (
+          {product.discount && product.stockQuantity > 0 && (
             <View style={styles.discountBadge}>
               <Text style={styles.discountText}>-{product.discount}%</Text>
+            </View>
+          )}
+          {product.stockQuantity === 0 && (
+            <View style={styles.soldOutBadge}>
+              <Text style={styles.soldOutText}>SOLD OUT</Text>
             </View>
           )}
         </View>
@@ -136,15 +152,15 @@ export default function ProductDetailsScreen({ route, navigation }) {
           <View style={styles.stockSection}>
             <View style={styles.stockInfo}>
               <Icon
-                name={product.inStock ? "checkmark-circle" : "close-circle"}
+                name={product.stockQuantity > 0 ? "checkmark-circle" : "close-circle"}
                 size={20}
-                color={product.inStock ? "#4CAF50" : "#FF5252"}
+                color={product.stockQuantity > 0 ? "#4CAF50" : "#FF5252"}
               />
-              <Text style={[styles.stockText, !product.inStock && styles.outOfStock]}>
-                {product.inStock ? 'In Stock' : 'Out of Stock'}
+              <Text style={[styles.stockText, product.stockQuantity === 0 && styles.outOfStock]}>
+                {product.stockQuantity > 0 ? 'In Stock' : 'Out of Stock'}
               </Text>
             </View>
-            {product.inStock && (
+            {product.stockQuantity > 0 && (
               <Text style={styles.stockAvailable}>{maxStock} available</Text>
             )}
           </View>
@@ -172,8 +188,8 @@ export default function ProductDetailsScreen({ route, navigation }) {
                 <Text style={styles.directionsText}>Get Directions</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.contactButton}>
-                <Icon name="call" size={20} color="#4CAF50" />
+              <TouchableOpacity style={styles.contactButton} onPress={handleContactShop}>
+                <Icon name="chatbubble-ellipses-outline" size={20} color="#4CAF50" />
                 <Text style={styles.contactText}>Contact Shop</Text>
               </TouchableOpacity>
             </View>
@@ -192,7 +208,7 @@ export default function ProductDetailsScreen({ route, navigation }) {
             <Text style={styles.bottomPrice}>₱{totalPrice.toFixed(2)}</Text>
           </View>
 
-          {product.inStock && (
+          {product.stockQuantity > 0 && (
             <View style={styles.bottomQuantityControls}>
               <TouchableOpacity
                 style={[styles.bottomQuantityButton, quantity === 1 && styles.quantityButtonDisabled]}
@@ -214,13 +230,13 @@ export default function ProductDetailsScreen({ route, navigation }) {
         </View>
 
         <TouchableOpacity
-          style={[styles.reserveButton, !product.inStock && styles.reserveButtonDisabled]}
-          disabled={!product.inStock}
+          style={[styles.reserveButton, product.stockQuantity === 0 && styles.reserveButtonDisabled]}
+          disabled={product.stockQuantity === 0}
           onPress={handleReserve}
         >
           <Icon name="calendar" size={20} color="#fff" />
           <Text style={styles.reserveText}>
-            {product.inStock ? 'Reserve' : 'Out of Stock'}
+            {product.stockQuantity > 0 ? 'Reserve' : 'Out of Stock'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -295,6 +311,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '700',
+  },
+  soldOutBadge: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -60 }, { translateY: -20 }],
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  soldOutText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 2,
   },
   infoSection: {
     padding: 20,

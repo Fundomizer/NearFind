@@ -39,14 +39,15 @@ export default function ReservationConfirmScreen({ route, navigation }) {
           {
             text: 'View Reservations',
             onPress: () => {
-              // Navigate to reservations tab
-              navigation.navigate('More', { screen: 'Reservations' });
+              // Navigate back to root then to Reservations tab
+              navigation.getParent()?.navigate('Reservations');
             }
           },
           {
             text: 'Continue Shopping',
             onPress: () => {
-              navigation.navigate('Market');
+              // Navigate back to Market (SearchHome)
+              navigation.navigate('SearchHome');
             }
           }
         ]

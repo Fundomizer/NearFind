@@ -6,7 +6,7 @@
  */
 
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc, getDocs, query } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, getDocs, query, deleteDoc, doc } from 'firebase/firestore';
 
 // Firebase configuration (same as your app)
 const firebaseConfig = {
@@ -94,7 +94,7 @@ const products = [
     category: "Food",
     description: "Premium purple yam jam made from local ube. Perfect for bread, desserts, or as a gift.",
     inStock: true,
-    stockQuantity: 25,
+    stockQuantity: 8,
     imageUrl: "ube_jam.jpg"
   },
   {
@@ -106,7 +106,7 @@ const products = [
     category: "Food",
     description: "Made from fresh Baguio strawberries. No preservatives.",
     inStock: true,
-    stockQuantity: 30,
+    stockQuantity: 12,
     imageUrl: "strawberry_jam.jpg"
   },
   {
@@ -118,7 +118,7 @@ const products = [
     category: "Food",
     description: "Crispy buttery cookies, a Baguio favorite pasalubong.",
     inStock: true,
-    stockQuantity: 15,
+    stockQuantity: 5,
     imageUrl: "lengua.jpg"
   },
 
@@ -132,7 +132,7 @@ const products = [
     category: "School Supplies",
     description: "Complete set: notebooks, pens, pencils, ruler, eraser, sharpener, and folder.",
     inStock: true,
-    stockQuantity: 20,
+    stockQuantity: 15,
     imageUrl: "school_supplies.jpg"
   },
   {
@@ -144,7 +144,7 @@ const products = [
     category: "School Supplies",
     description: "High-quality spiral notebooks with 100 pages each.",
     inStock: true,
-    stockQuantity: 40,
+    stockQuantity: 9,
     imageUrl: "notebooks.jpg"
   },
   {
@@ -156,7 +156,7 @@ const products = [
     category: "School Supplies",
     description: "Colored pencils, crayons, watercolor, and sketch pad.",
     inStock: true,
-    stockQuantity: 12,
+    stockQuantity: 3,
     imageUrl: "art_supplies.jpg"
   },
 
@@ -170,7 +170,7 @@ const products = [
     category: "Food",
     description: "Freshly baked sourdough with crispy crust. Best before 6PM!",
     inStock: true,
-    stockQuantity: 8,
+    stockQuantity: 7,
     imageUrl: "sour_dough_bread.jpg"
   },
   {
@@ -182,7 +182,7 @@ const products = [
     category: "Food",
     description: "Traditional Filipino bread rolls, baked fresh daily.",
     inStock: true,
-    stockQuantity: 50,
+    stockQuantity: 14,
     imageUrl: "pandesal.jpg"
   },
   {
@@ -194,7 +194,7 @@ const products = [
     category: "Food",
     description: "Buttery brioche with sugar and cheese topping.",
     inStock: true,
-    stockQuantity: 18,
+    stockQuantity: 6,
     imageUrl: "ensaymada.jpg"
   },
 
@@ -208,7 +208,7 @@ const products = [
     category: "Food",
     description: "Locally made organic peanut butter. No added sugar.",
     inStock: true,
-    stockQuantity: 35,
+    stockQuantity: 11,
     imageUrl: "peanut_butter.jpg"
   },
   {
@@ -220,7 +220,7 @@ const products = [
     category: "Food",
     description: "Premium Arabica coffee beans grown in Benguet.",
     inStock: true,
-    stockQuantity: 22,
+    stockQuantity: 4,
     imageUrl: "coffee.jpg"
   },
   {
@@ -232,7 +232,7 @@ const products = [
     category: "Food",
     description: "Lettuce, tomatoes, carrots, and potatoes. Farm fresh!",
     inStock: true,
-    stockQuantity: 15,
+    stockQuantity: 13,
     imageUrl: "vegetables.jpg"
   },
 
@@ -246,7 +246,7 @@ const products = [
     category: "Food",
     description: "100% pure honey from local bee farms. Raw and unprocessed.",
     inStock: true,
-    stockQuantity: 28,
+    stockQuantity: 10,
     imageUrl: "honey.jpg"
   },
   {
@@ -258,7 +258,7 @@ const products = [
     category: "Food",
     description: "Gift set with 3 varieties: wildflower, eucalyptus, and sunflower honey.",
     inStock: true,
-    stockQuantity: 10,
+    stockQuantity: 2,
     imageUrl: "honey_gift.jpg"
   },
   {
@@ -270,7 +270,7 @@ const products = [
     category: "Food",
     description: "Natural honeycomb straight from the hive. Rich and pure.",
     inStock: true,
-    stockQuantity: 6,
+    stockQuantity: 1,
     imageUrl: "honeycomb.jpg"
   },
 
@@ -284,7 +284,7 @@ const products = [
     category: "Food",
     description: "Fresh strawberries picked this morning. Limited stock!",
     inStock: true,
-    stockQuantity: 5,
+    stockQuantity: 6,
     imageUrl: "strawberries.jpg"
   },
   {
@@ -296,7 +296,7 @@ const products = [
     category: "Food",
     description: "Crunchy peanut candy. Great pasalubong!",
     inStock: true,
-    stockQuantity: 20,
+    stockQuantity: 15,
     imageUrl: "peanut_brittle.jpg"
   },
   {
@@ -308,7 +308,7 @@ const products = [
     category: "School Supplies",
     description: "Casio scientific calculator for students.",
     inStock: true,
-    stockQuantity: 14,
+    stockQuantity: 8,
     imageUrl: "calculator.jpg"
   },
   {
@@ -320,7 +320,7 @@ const products = [
     category: "Food",
     description: "Moist banana bread with walnuts. Baked this morning.",
     inStock: true,
-    stockQuantity: 10,
+    stockQuantity: 11,
     imageUrl: "banana_bread.jpg"
   },
   {
@@ -332,7 +332,7 @@ const products = [
     category: "Food",
     description: "Premium rice from Benguet farms.",
     inStock: true,
-    stockQuantity: 45,
+    stockQuantity: 9,
     imageUrl: "rice.jpg"
   }
 ];
@@ -341,12 +341,23 @@ async function seedDatabase() {
   try {
     console.log("🌱 Starting database seeding...\n");
 
-    // Check if data already exists
+    // Check if data already exists and delete it
     const shopsSnapshot = await getDocs(collection(db, 'shops'));
     if (!shopsSnapshot.empty) {
-      console.log("⚠️  Database already has data. Delete existing data first or skip seeding.");
-      console.log(`   Found ${shopsSnapshot.size} shops already in database.`);
-      return;
+      console.log("🗑️  Deleting existing shops...");
+      for (const shopDoc of shopsSnapshot.docs) {
+        await deleteDoc(doc(db, 'shops', shopDoc.id));
+      }
+      console.log(`   ✅ Deleted ${shopsSnapshot.size} shops\n`);
+    }
+
+    const productsSnapshot = await getDocs(collection(db, 'products'));
+    if (!productsSnapshot.empty) {
+      console.log("🗑️  Deleting existing products...");
+      for (const productDoc of productsSnapshot.docs) {
+        await deleteDoc(doc(db, 'products', productDoc.id));
+      }
+      console.log(`   ✅ Deleted ${productsSnapshot.size} products\n`);
     }
 
     // Seed shops

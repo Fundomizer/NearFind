@@ -98,6 +98,22 @@ export default function ReservationsScreen({ navigation }) {
     });
   };
 
+  const getTimeAgo = (timestamp) => {
+    if (!timestamp) return 'N/A';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const diffInMs = now - date;
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+    return formatDate(timestamp);
+  };
+
   const activeReservations = reservations.filter(
     (r) => r.status === 'pending' || r.status === 'confirmed'
   );
@@ -192,12 +208,18 @@ export default function ReservationsScreen({ navigation }) {
           <View style={styles.reservationsList}>
             {displayReservations.map((reservation) => (
               <View key={reservation.id} style={styles.reservationCard}>
-                {/* Status Badge */}
-                <View
-                  style={[styles.statusBadge, { backgroundColor: getStatusColor(reservation.status) }]}
-                >
-                  <Icon name={getStatusIcon(reservation.status)} size={14} color="#fff" />
-                  <Text style={styles.statusText}>{reservation.status.toUpperCase()}</Text>
+                {/* Status Badge and Time */}
+                <View style={styles.statusRow}>
+                  <View
+                    style={[styles.statusBadge, { backgroundColor: getStatusColor(reservation.status) }]}
+                  >
+                    <Icon name={getStatusIcon(reservation.status)} size={14} color="#fff" />
+                    <Text style={styles.statusText}>{reservation.status.toUpperCase()}</Text>
+                  </View>
+                  <View style={styles.timeAgoContainer}>
+                    <Icon name="time-outline" size={14} color="#999" />
+                    <Text style={styles.timeAgoText}>{getTimeAgo(reservation.createdAt)}</Text>
+                  </View>
                 </View>
 
                 {/* Product Info */}
@@ -382,15 +404,29 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
     gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    marginBottom: 12,
+  },
+  timeAgoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  timeAgoText: {
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '500',
   },
   statusText: {
     fontSize: 11,

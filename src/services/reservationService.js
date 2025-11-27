@@ -1,5 +1,5 @@
 import { db, auth } from '../config/firebase';
-import { collection, addDoc, getDocs, query, where, orderBy, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, updateDoc, doc, Timestamp, getDoc } from 'firebase/firestore';
 
 // Create a new reservation
 export const createReservation = async (productData, quantity) => {
@@ -9,6 +9,21 @@ export const createReservation = async (productData, quantity) => {
       return { success: false, error: 'User not authenticated' };
     }
 
+    // Check if product has enough stock
+    const productRef = doc(db, 'products', productData.id);
+    const productDoc = await getDoc(productRef);
+
+    if (!productDoc.exists()) {
+      return { success: false, error: 'Product not found' };
+    }
+
+    const currentStock = productDoc.data().stockQuantity || 0;
+
+    if (currentStock < quantity) {
+      return { success: false, error: `Only ${currentStock} items available` };
+    }
+
+    // Create reservation
     const reservationData = {
       userId: user.uid,
       userEmail: user.email,
@@ -27,6 +42,13 @@ export const createReservation = async (productData, quantity) => {
     };
 
     const docRef = await addDoc(collection(db, 'reservations'), reservationData);
+
+    // Decrease stock quantity
+    const newStock = currentStock - quantity;
+    await updateDoc(productRef, {
+      stockQuantity: newStock,
+      inStock: newStock > 0,
+    });
 
     return {
       success: true,
@@ -47,10 +69,10 @@ export const getUserReservations = async () => {
       return { success: false, error: 'User not authenticated' };
     }
 
+    // Query without orderBy first to avoid composite index requirement
     const q = query(
       collection(db, 'reservations'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', user.uid)
     );
 
     const querySnapshot = await getDocs(q);
@@ -61,6 +83,13 @@ export const getUserReservations = async () => {
         id: doc.id,
         ...doc.data(),
       });
+    });
+
+    // Sort in memory by createdAt descending
+    reservations.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+      const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+      return bTime - aTime;
     });
 
     return { success: true, data: reservations };
