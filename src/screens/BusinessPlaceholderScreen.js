@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView, Image, Linking, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView, Image, Linking, Platform, ActivityIndicator } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { logOut } from '../services/authService';
 import AddProductScreen from './AddProductScreen';
 import BusinessChatScreen from './BusinessChatScreen';
+import {
+    getBusinessProfile,
+    updateBusinessProfile,
+    uploadImage,
+    deleteProduct,
+    subscribeToBusinessProducts
+} from '../services/businessService';
 
 export default function BusinessPlaceholderScreen() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -19,6 +26,40 @@ export default function BusinessPlaceholderScreen() {
     const [companyName, setCompanyName] = useState('My Business');
     const [selectedFilter, setSelectedFilter] = useState(null);
     const [pinLocation, setPinLocation] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [businessId, setBusinessId] = useState(null);
+
+    // Load business profile and products on mount
+    useEffect(() => {
+        loadBusinessProfile();
+
+        // Subscribe to real-time product updates
+        const unsubscribe = subscribeToBusinessProducts((updatedProducts) => {
+            setProducts(updatedProducts);
+            setLoading(false);
+        });
+
+        if (!unsubscribe) {
+            setLoading(false);
+        }
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, []);
+
+    const loadBusinessProfile = async () => {
+        const result = await getBusinessProfile();
+        if (result.success) {
+            const profile = result.data;
+            setBusinessId(profile.id);
+            setCompanyName(profile.companyName || 'My Business');
+            setBusinessLogo(profile.logo || null);
+            if (profile.latitude && profile.longitude) {
+                setPinLocation({ latitude: profile.latitude, longitude: profile.longitude });
+            }
+        }
+    };
 
     const handleLogout = async() => {
         Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -54,6 +95,9 @@ export default function BusinessPlaceholderScreen() {
             const { latitude, longitude } = location.coords;
 
             setPinLocation({ latitude, longitude });
+
+            // Save location to business profile
+            await updateBusinessProfile({ latitude, longitude });
 
             const scheme = Platform.select({
                 ios: 'maps:',
@@ -91,9 +135,10 @@ export default function BusinessPlaceholderScreen() {
                         { text: 'Cancel', style: 'cancel' },
                         {
                             text: 'Save',
-                            onPress: (text) => {
+                            onPress: async (text) => {
                                 if (text && text.trim()) {
                                     setCompanyName(text.trim());
+                                    await updateBusinessProfile({ companyName: text.trim() });
                                 }
                             }
                         },
@@ -111,7 +156,16 @@ export default function BusinessPlaceholderScreen() {
                             quality: 0.8,
                         });
                         if (!result.canceled) {
-                            setBusinessLogo(result.assets[0].uri);
+                            const logoUri = result.assets[0].uri;
+                            setBusinessLogo(logoUri);
+
+                            // Upload logo to Firebase Storage
+                            const uploadResult = await uploadImage(logoUri, 'logos');
+                            if (uploadResult.success) {
+                                await updateBusinessProfile({ logo: uploadResult.url });
+                            } else {
+                                Alert.alert('Error', 'Failed to upload logo to cloud storage.');
+                            }
                         }
                     } catch (error) {
                         console.error('Error picking logo:', error);
@@ -201,23 +255,24 @@ export default function BusinessPlaceholderScreen() {
         ]);
     };
 
-    const handleSaveProduct = (product) => {
-        if (editingProduct) {
-            setProducts(products.map(p => p.id === product.id ? product : p));
-            setEditingProduct(null);
-        } else {
-            setProducts([...products, product]);
-        }
-    };
+    // No longer needed - AddProductScreen handles saving directly to Firestore
+    // Real-time listener will automatically update the products list
 
     const handleProductPress = (product) => {
-        Alert.alert(product.label, 'What would you like to do?', [
+        const productName = product.label || product.name;
+        const productPrice = product.originalPrice || product.price;
+        const productDiscounted = product.discountedPrice;
+        const productQuantity = product.quantity || product.stockQuantity;
+        const productStatus = product.status;
+        const productDescription = product.description;
+
+        Alert.alert(productName, 'What would you like to do?', [
             { text: 'Cancel', style: 'cancel' },
             {
                 text: 'View Details',
                 onPress: () => {
-                    const priceText = product.discountedPrice ? `${product.discountedPrice} (was ${product.originalPrice})` : `${product.originalPrice}`;
-                    Alert.alert(product.label, `${priceText}\n\nQuantity: ${product.quantity}\nStatus: ${product.status}\n\n${product.description}`);
+                    const priceText = productDiscounted ? `₱${productDiscounted} (was ₱${productPrice})` : `₱${productPrice}`;
+                    Alert.alert(productName, `${priceText}\n\nQuantity: ${productQuantity}\nStatus: ${productStatus}\n\n${productDescription}`);
                 }
             },
             {
@@ -231,13 +286,18 @@ export default function BusinessPlaceholderScreen() {
                 text: 'Remove',
                 style: 'destructive',
                 onPress: () => {
-                    Alert.alert('Remove Product', `Are you sure you want to remove "${product.label}"?`, [
+                    Alert.alert('Remove Product', `Are you sure you want to remove "${productName}"?`, [
                         { text: 'Cancel', style: 'cancel' },
                         {
                             text: 'Remove',
                             style: 'destructive',
-                            onPress: () => {
-                                setProducts(products.filter(p => p.id !== product.id));
+                            onPress: async () => {
+                                const result = await deleteProduct(product.id);
+                                if (result.success) {
+                                    Alert.alert('Success', 'Product removed successfully');
+                                } else {
+                                    Alert.alert('Error', result.error || 'Failed to remove product');
+                                }
                             }
                         },
                     ]);
@@ -282,7 +342,6 @@ export default function BusinessPlaceholderScreen() {
                 setEditingProduct(null);
             }
         }
-        onSaveProduct = { handleSaveProduct }
         editProduct = { editingProduct }
         />;
     }
@@ -295,6 +354,15 @@ export default function BusinessPlaceholderScreen() {
     }
 
     const productsByTag = organizeProductsByTags();
+
+    if (loading) {
+        return (
+            <View style={[styles.container, styles.centerContent]}>
+                <ActivityIndicator size="large" color="#4CAF50" />
+                <Text style={styles.loadingText}>Loading products...</Text>
+            </View>
+        );
+    }
 
     return ( <
             View style = { styles.container } >
@@ -424,27 +492,27 @@ export default function BusinessPlaceholderScreen() {
                         } >
                         <
                         Image source = {
-                            { uri: product.image }
+                            { uri: product.image || product.imageUrl }
                         }
                         style = { styles.productImage }
                         /> <
                         View style = { styles.productInfo } >
                         <
                         Text style = { styles.productName }
-                        numberOfLines = { 1 } > { product.label } < /Text> <
+                        numberOfLines = { 1 } > { product.label || product.name } < /Text> <
                         View style = { styles.priceContainer } > {
                             product.discountedPrice ? ( <
                                 >
                                 <
-                                Text style = { styles.discountedPrice } > { product.discountedPrice } < /Text> <
-                                Text style = { styles.originalPriceStrike } > { product.originalPrice } < /Text> < /
+                                Text style = { styles.discountedPrice } > ₱{ product.discountedPrice } < /Text> <
+                                Text style = { styles.originalPriceStrike } > ₱{ product.originalPrice } < /Text> < /
                                 >
                             ) : ( <
-                                Text style = { styles.productPrice } > { product.originalPrice } < /Text>
+                                Text style = { styles.productPrice } > ₱{ product.originalPrice || product.price } < /Text>
                             )
                         } <
                         /View> <
-                        Text style = { styles.quantityText } > Qty: { product.quantity } < /Text> <
+                        Text style = { styles.quantityText } > Qty: { product.quantity || product.stockQuantity } < /Text> <
                         View style = {
                             [styles.statusBadge, product.status === 'available' ? styles.statusAvailable : product.status === 'out of stock' ? styles.statusOutOfStock : styles.statusPreOrder]
                         } >
@@ -503,6 +571,8 @@ export default function BusinessPlaceholderScreen() {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#fff' },
+    centerContent: { justifyContent: 'center', alignItems: 'center' },
+    loadingText: { marginTop: 16, fontSize: 16, color: '#666' },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 20, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
     logoContainer: { width: 44, height: 44, marginRight: 12 },
     logoImage: { width: '100%', height: '100%', borderRadius: 22, resizeMode: 'cover' },

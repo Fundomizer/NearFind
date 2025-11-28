@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView, Image, ActivityIndicator } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
+import { addProduct, updateProduct } from '../services/businessService';
 
 export default function AddProductScreen({ onBack, onSaveProduct, editProduct }) {
-  const [productImage, setProductImage] = useState(editProduct?.image || null);
-  const [label, setLabel] = useState(editProduct?.label || '');
+  const [productImage, setProductImage] = useState(editProduct?.image || editProduct?.imageUrl || null);
+  const [label, setLabel] = useState(editProduct?.label || editProduct?.name || '');
   const [originalPrice, setOriginalPrice] = useState(editProduct?.originalPrice?.toString() || '');
   const [discountedPrice, setDiscountedPrice] = useState(editProduct?.discountedPrice?.toString() || '');
   const [description, setDescription] = useState(editProduct?.description || '');
   const [status, setStatus] = useState(editProduct?.status || 'available');
   const [tags, setTags] = useState(editProduct?.tags?.join(', ') || '');
-  const [quantity, setQuantity] = useState(editProduct?.quantity?.toString() || '0');
+  const [quantity, setQuantity] = useState(editProduct?.quantity?.toString() || editProduct?.stockQuantity?.toString() || '0');
+  const [saving, setSaving] = useState(false);
 
   const handleImageUpload = async () => {
     try {
@@ -30,13 +32,15 @@ export default function AddProductScreen({ onBack, onSaveProduct, editProduct })
     }
   };
 
-  const handleSaveProduct = () => {
+  const handleSaveProduct = async () => {
     if (!productImage || !label || !originalPrice) {
       Alert.alert('Missing Information', 'Please fill in at least product image, label, and original price.');
       return;
     }
-    const product = {
-      id: editProduct?.id || Date.now().toString(),
+
+    setSaving(true);
+
+    const productData = {
       image: productImage,
       label,
       originalPrice: parseFloat(originalPrice),
@@ -46,10 +50,31 @@ export default function AddProductScreen({ onBack, onSaveProduct, editProduct })
       tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
       quantity: parseInt(quantity) || 0,
     };
-    onSaveProduct(product);
-    Alert.alert('Success', `Product ${editProduct ? 'updated' : 'saved'} successfully!`, [
-      { text: 'OK', onPress: () => onBack() }
-    ]);
+
+    try {
+      let result;
+      if (editProduct && editProduct.id) {
+        // Update existing product
+        result = await updateProduct(editProduct.id, productData);
+      } else {
+        // Add new product
+        result = await addProduct(productData);
+      }
+
+      setSaving(false);
+
+      if (result.success) {
+        Alert.alert('Success', `Product ${editProduct ? 'updated' : 'added'} successfully!`, [
+          { text: 'OK', onPress: () => onBack() }
+        ]);
+      } else {
+        Alert.alert('Error', result.error || 'Failed to save product. Please try again.');
+      }
+    } catch (error) {
+      setSaving(false);
+      console.error('Error saving product:', error);
+      Alert.alert('Error', 'Failed to save product. Please try again.');
+    }
   };
 
   const statusOptions = ['available', 'out of stock', 'pre-order'];
@@ -108,8 +133,16 @@ export default function AddProductScreen({ onBack, onSaveProduct, editProduct })
           <Text style={styles.label}>Tags (comma separated)</Text>
           <TextInput style={styles.input} placeholder="e.g. snacks, drinks, supplies" value={tags} onChangeText={setTags} placeholderTextColor="#999" />
         </View>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSaveProduct}>
-          <Text style={styles.saveButtonText}>{editProduct ? 'Update Product' : 'Save Product'}</Text>
+        <TouchableOpacity
+          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          onPress={handleSaveProduct}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>{editProduct ? 'Update Product' : 'Save Product'}</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -138,5 +171,6 @@ const styles = StyleSheet.create({
   statusButtonText: { fontSize: 14, fontWeight: '600', color: '#666' },
   statusButtonTextActive: { color: '#fff' },
   saveButton: { backgroundColor: '#4CAF50', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 12, marginBottom: 40 },
+  saveButtonDisabled: { backgroundColor: '#999' },
   saveButtonText: { fontSize: 18, fontWeight: '700', color: '#fff' },
 });
