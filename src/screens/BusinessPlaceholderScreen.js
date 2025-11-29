@@ -5,7 +5,6 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import { logOut } from '../services/authService';
 import AddProductScreen from './AddProductScreen';
-import BusinessChatScreen from './BusinessChatScreen';
 import {
     getBusinessProfile,
     updateBusinessProfile,
@@ -14,12 +13,11 @@ import {
     subscribeToBusinessProducts
 } from '../services/businessService';
 
-export default function BusinessPlaceholderScreen() {
+export default function BusinessPlaceholderScreen({ navigation }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [promoImages, setPromoImages] = useState([]);
     const [activeTab, setActiveTab] = useState('home');
     const [showAddProduct, setShowAddProduct] = useState(false);
-    const [showChat, setShowChat] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [products, setProducts] = useState([]);
     const [businessLogo, setBusinessLogo] = useState(null);
@@ -346,13 +344,6 @@ export default function BusinessPlaceholderScreen() {
         />;
     }
 
-    if (showChat) {
-        return <BusinessChatScreen onBack = {
-            () => setShowChat(false)
-        }
-        />;
-    }
-
     const productsByTag = organizeProductsByTags();
 
     if (loading) {
@@ -498,7 +489,7 @@ export default function BusinessPlaceholderScreen() {
                     </View>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.navButton} onPress={() => { setActiveTab('chat'); setShowChat(true); }}>
+                <TouchableOpacity style={styles.navButton} onPress={() => { setActiveTab('chat'); navigation.navigate('BusinessChatList'); }}>
                     <Icon name={activeTab === 'chat' ? 'chatbubble' : 'chatbubble-outline'} size={28} color={activeTab === 'chat' ? '#4CAF50' : '#999'} />
                 </TouchableOpacity>
             </View>

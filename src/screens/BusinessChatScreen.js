@@ -1,53 +1,92 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
+import { subscribeToBusinessConversations } from '../services/messageService';
+import { getBusinessProfile } from '../services/businessService';
 
-export default function BusinessChatScreen({ onBack }) {
-  const [conversations, setConversations] = useState([
-    {
-      id: '1',
-      customerName: 'Juan Dela Cruz',
-      customerAvatar: null,
-      lastMessage: 'Is this product still available?',
-      timestamp: '2:30 PM',
-      unreadCount: 2,
-      isUnread: true,
-    },
-    {
-      id: '2',
-      customerName: 'Maria Santos',
-      customerAvatar: null,
-      lastMessage: 'Thank you for the quick response!',
-      timestamp: 'Yesterday',
-      unreadCount: 0,
-      isUnread: false,
-    },
-  ]);
+export default function BusinessChatScreen({ navigation, route }) {
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [shopId, setShopId] = useState(null);
+
+  useEffect(() => {
+    loadBusinessProfile();
+  }, []);
+
+  useEffect(() => {
+    if (shopId) {
+      const unsubscribe = subscribeToBusinessConversations(shopId, (convos) => {
+        setConversations(convos);
+        setLoading(false);
+      });
+
+      if (!unsubscribe) {
+        setLoading(false);
+      }
+
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
+    }
+  }, [shopId]);
+
+  const loadBusinessProfile = async () => {
+    const result = await getBusinessProfile();
+    if (result.success) {
+      setShopId(result.data.id);
+    } else {
+      setLoading(false);
+      console.error('Failed to load business profile:', result.error);
+    }
+  };
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return '';
+
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return date.toLocaleDateString();
+  };
 
   const handleConversationPress = (conversation) => {
-    console.log('Open conversation:', conversation.customerName);
+    if (navigation) {
+      navigation.navigate('BusinessIndividualChat', {
+        conversationId: conversation.id,
+        customerEmail: conversation.userEmail,
+        userId: conversation.userId
+      });
+    } else {
+      console.log('Open conversation:', conversation.userEmail);
+    }
   };
 
   const renderConversation = ({ item }) => (
     <TouchableOpacity style={styles.conversationItem} onPress={() => handleConversationPress(item)}>
       <View style={styles.avatarContainer}>
-        {item.customerAvatar ? (
-          <Image source={{ uri: item.customerAvatar }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Icon name="person" size={24} color="#999" />
-          </View>
-        )}
-        {item.isUnread && <View style={styles.onlineIndicator} />}
+        <View style={styles.avatarPlaceholder}>
+          <Icon name="person" size={24} color="#999" />
+        </View>
+        {item.unreadCount > 0 && <View style={styles.onlineIndicator} />}
       </View>
       <View style={styles.conversationContent}>
         <View style={styles.conversationHeader}>
-          <Text style={styles.customerName}>{item.customerName}</Text>
-          <Text style={styles.timestamp}>{item.timestamp}</Text>
+          <Text style={styles.customerName}>{item.userEmail || 'Customer'}</Text>
+          <Text style={styles.timestamp}>{formatTimestamp(item.lastMessageTime)}</Text>
         </View>
         <View style={styles.messagePreview}>
-          <Text style={[styles.lastMessage, item.isUnread && styles.unreadMessage]} numberOfLines={1}>
-            {item.lastMessage}
+          <Text style={[styles.lastMessage, item.unreadCount > 0 && styles.unreadMessage]} numberOfLines={1}>
+            {item.lastMessage || 'No messages yet'}
           </Text>
           {item.unreadCount > 0 && (
             <View style={styles.unreadBadge}>
@@ -62,7 +101,7 @@ export default function BusinessChatScreen({ onBack }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Messages</Text>
@@ -70,7 +109,12 @@ export default function BusinessChatScreen({ onBack }) {
           <Icon name="ellipsis-vertical" size={24} color="#333" />
         </TouchableOpacity>
       </View>
-      {conversations.length === 0 ? (
+      {loading ? (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.emptyText}>Loading conversations...</Text>
+        </View>
+      ) : conversations.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Icon name="chatbubbles-outline" size={80} color="#ccc" />
           <Text style={styles.emptyTitle}>No Messages Yet</Text>
