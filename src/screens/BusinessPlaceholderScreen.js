@@ -40,7 +40,7 @@ export default function BusinessPlaceholderScreen() {
         products.forEach(product => {
             // Check multiple possible tag field names
             const tag = product.tag || product.category || product.type || 'Other';
-            const tagName = tag.trim() || 'Other';
+            const tagName = (typeof tag === 'string' && tag.trim()) ? tag.trim() : 'Other';
             if (!byTag[tagName]) byTag[tagName] = [];
             byTag[tagName].push(product);
         });
