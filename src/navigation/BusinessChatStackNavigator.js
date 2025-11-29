@@ -6,22 +6,20 @@ import BusinessIndividualChatScreen from '../screens/BusinessIndividualChatScree
 const Stack = createNativeStackNavigator();
 
 export default function BusinessChatStackNavigator({ onGoBack }) {
-    return (
-        <Stack.Navigator
-            initialRouteName="BusinessChatList"
-            screenOptions={{
+    return ( <
+        Stack.Navigator initialRouteName = "BusinessChatList"
+        screenOptions = {
+            {
                 headerShown: false,
-            }}
-        >
-            <Stack.Screen
-                name="BusinessChatList"
-                component={BusinessChatScreen}
-                initialParams={{ onGoBack }}
-            />
-            <Stack.Screen
-                name="BusinessIndividualChat"
-                component={BusinessIndividualChatScreen}
-            />
-        </Stack.Navigator>
+            }
+        } >
+        <
+        Stack.Screen name = "BusinessChatList"
+        component = { BusinessChatScreen }
+        /> <
+        Stack.Screen name = "BusinessIndividualChat"
+        component = { BusinessIndividualChatScreen }
+        /> <
+        /Stack.Navigator>
     );
 }

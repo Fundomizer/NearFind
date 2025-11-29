@@ -3,10 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, ScrollView,
 import * as ImagePicker from 'expo-image-picker';
 import Icon from '@expo/vector-icons/Ionicons';
 import AddProductScreen from './AddProductScreen';
-import BusinessChatStackNavigator from '../navigation/BusinessChatStackNavigator';
-import { getBusinessProfile, updateBusinessProfile, uploadImage, deleteProduct, subscribeToBusinessProducts } from '../services/businessService';
+import { getBusinessProfile, updateBusinessProfile, uploadImage, deleteProduct, subscribeToBusinessProducts, addProduct, updateProduct } from '../services/businessService';
 
-export default function BusinessPlaceholderScreen() {
+export default function BusinessPlaceholderScreen({ navigation }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [promoImages, setPromoImages] = useState([]);
     const [activeTab, setActiveTab] = useState('home');
@@ -17,14 +16,15 @@ export default function BusinessPlaceholderScreen() {
     const [loading, setLoading] = useState(true);
     const [showAddProduct, setShowAddProduct] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
-    const [showChat, setShowChat] = useState(false);
 
     useEffect(() => {
         async function loadBusinessProfile() {
-            const profile = await getBusinessProfile();
-            setCompanyName(profile.companyName || 'Business');
-            setBusinessLogo(profile.logoUrl || null);
-            setPromoImages(profile.promoImages || []);
+            const result = await getBusinessProfile();
+            if (result.success && result.data) {
+                setCompanyName(result.data.companyName || 'Business');
+                setBusinessLogo(result.data.logoUrl || null);
+                setPromoImages(result.data.promoImages || []);
+            }
         }
         loadBusinessProfile();
         const unsubscribe = subscribeToBusinessProducts((updatedProducts) => {
@@ -107,22 +107,38 @@ export default function BusinessPlaceholderScreen() {
         setShowAddProduct(true);
     }
 
+    async function handleSaveProduct(product) {
+        try {
+            let result;
+            if (editingProduct) {
+                // Update existing product
+                result = await updateProduct(product.id, product);
+            } else {
+                // Add new product
+                result = await addProduct(product);
+            }
+
+            if (result.success) {
+                // Products will auto-update via subscription
+                setShowAddProduct(false);
+                setEditingProduct(null);
+            } else {
+                Alert.alert('Error', result.error || 'Failed to save product');
+            }
+        } catch (error) {
+            console.error('Error saving product:', error);
+            Alert.alert('Error', 'Failed to save product');
+        }
+    }
+
     if (showAddProduct) {
         return React.createElement(AddProductScreen, {
             onBack: () => {
                 setShowAddProduct(false);
                 setEditingProduct(null);
             },
+            onSaveProduct: handleSaveProduct,
             editProduct: editingProduct
-        });
-    }
-
-    if (showChat) {
-        return React.createElement(BusinessChatStackNavigator, {
-            onGoBack: () => {
-                setShowChat(false);
-                setActiveTab('home');
-            }
         });
     }
 
@@ -230,7 +246,7 @@ export default function BusinessPlaceholderScreen() {
                     style: styles.navButton,
                     onPress: () => {
                         setActiveTab('chat');
-                        setShowChat(true);
+                        navigation.navigate('BusinessChatList');
                     }
                 },
                 React.createElement(Icon, { name: activeTab === 'chat' ? 'chatbubble' : 'chatbubble-outline', size: 28, color: activeTab === 'chat' ? '#4CAF50' : '#999' })
