@@ -83,32 +83,57 @@ export const updateBusinessProfile = async (profileData) => {
 };
 
 /**
- * Upload image to Firebase Storage
+ * Upload image to Firebase Storage and return download URL
  */
 export const uploadImage = async (imageUri, folder = 'products') => {
   try {
     const user = auth.currentUser;
     if (!user) {
+      console.error('❌ Upload failed: User not authenticated');
       return { success: false, error: 'User not authenticated' };
     }
 
-    // Convert image URI to blob
+    console.log('📤 Starting image upload to Firebase Storage...');
+    console.log('📁 Folder:', folder);
+    console.log('👤 User ID:', user.uid);
+    console.log('🖼️  Image URI:', imageUri);
+
+    // Fetch the image and convert to blob
     const response = await fetch(imageUri);
     const blob = await response.blob();
+    console.log('✅ Image fetched, blob size:', (blob.size / 1024).toFixed(2), 'KB');
 
-    // Create unique filename
-    const filename = `${folder}/${user.uid}/${Date.now()}.jpg`;
+    // Create a unique filename using timestamp and user ID
+    const filename = `${folder}/${user.uid}_${Date.now()}.jpg`;
     const storageRef = ref(storage, filename);
 
-    // Upload image
-    await uploadBytes(storageRef, blob);
+    console.log('📂 Uploading to path:', filename);
 
-    // Get download URL
+    // Upload the blob to Firebase Storage
+    await uploadBytes(storageRef, blob);
+    console.log('✅ Blob uploaded successfully');
+
+    // Get the download URL
     const downloadURL = await getDownloadURL(storageRef);
+
+    console.log('✅ Image uploaded successfully!');
+    console.log('🔗 Download URL:', downloadURL);
 
     return { success: true, url: downloadURL };
   } catch (error) {
-    console.error('Error uploading image:', error);
+    console.error('❌ Error uploading image to Firebase Storage:', error);
+    console.error('❌ Error code:', error.code);
+    console.error('❌ Error message:', error.message);
+
+    // Provide more helpful error messages
+    if (error.code === 'storage/unauthorized') {
+      return { success: false, error: 'Firebase Storage rules not configured. Please check FIREBASE_STORAGE_SETUP.md' };
+    } else if (error.code === 'storage/unauthenticated') {
+      return { success: false, error: 'User not authenticated. Please log in again.' };
+    } else if (error.code === 'storage/unknown') {
+      return { success: false, error: 'Firebase Storage might not be enabled. Check Firebase Console > Storage.' };
+    }
+
     return { success: false, error: error.message };
   }
 };
@@ -120,6 +145,8 @@ export const uploadImage = async (imageUri, folder = 'products') => {
  */
 export const addProduct = async (productData) => {
   try {
+    console.log('addProduct called with data:', JSON.stringify(productData, null, 2));
+
     const user = auth.currentUser;
     if (!user) {
       return { success: false, error: 'User not authenticated' };
@@ -131,14 +158,25 @@ export const addProduct = async (productData) => {
       return { success: false, error: 'Business profile not found' };
     }
 
+    console.log('Business profile:', JSON.stringify(businessProfile.data, null, 2));
+
     // Upload product image if it's a local URI
     let imageUrl = productData.image;
     if (productData.image && productData.image.startsWith('file://')) {
+      console.log('Uploading image from local file...');
       const uploadResult = await uploadImage(productData.image, 'products');
       if (!uploadResult.success) {
-        return { success: false, error: 'Failed to upload product image' };
+        console.error('Image upload failed:', uploadResult.error);
+        return { success: false, error: uploadResult.error };
       }
       imageUrl = uploadResult.url;
+      console.log('Image uploaded successfully, size:', (imageUrl.length / 1024).toFixed(2), 'KB');
+    }
+
+    // Calculate discount percentage if discounted price exists
+    let discountPercentage = 0;
+    if (productData.discountedPrice && productData.originalPrice > productData.discountedPrice) {
+      discountPercentage = Math.round(((productData.originalPrice - productData.discountedPrice) / productData.originalPrice) * 100);
     }
 
     const product = {
@@ -146,12 +184,14 @@ export const addProduct = async (productData) => {
       price: productData.discountedPrice || productData.originalPrice,
       originalPrice: productData.originalPrice,
       discountedPrice: productData.discountedPrice || null,
+      discount: discountPercentage,
       description: productData.description || '',
       imageUrl: imageUrl,
       stockQuantity: productData.quantity || 0,
       inStock: (productData.quantity || 0) > 0 && productData.status === 'available',
       status: productData.status || 'available',
       tags: productData.tags || [],
+      category: productData.category || 'General',
       shopName: businessProfile.data.companyName,
       shopId: user.uid,
       latitude: businessProfile.data.latitude || 0,
@@ -164,6 +204,18 @@ export const addProduct = async (productData) => {
     const docRef = await addDoc(collection(db, 'products'), product);
 
     console.log('Product added successfully:', docRef.id);
+    console.log('Product saved - Name:', product.name, 'Price:', product.price, 'Category:', product.category);
+
+    // Verify the document was actually saved
+    setTimeout(async () => {
+      const verifyDoc = await getDoc(docRef);
+      if (verifyDoc.exists()) {
+        console.log('✓ Product verified in Firestore:', docRef.id);
+      } else {
+        console.error('✗ Product NOT found in Firestore after save:', docRef.id);
+      }
+    }, 1000);
+
     return { success: true, productId: docRef.id };
   } catch (error) {
     console.error('Error adding product:', error);
@@ -203,17 +255,25 @@ export const updateProduct = async (productId, productData) => {
       imageUrl = uploadResult.url;
     }
 
+    // Calculate discount percentage if discounted price exists
+    let discountPercentage = 0;
+    if (productData.discountedPrice && productData.originalPrice > productData.discountedPrice) {
+      discountPercentage = Math.round(((productData.originalPrice - productData.discountedPrice) / productData.originalPrice) * 100);
+    }
+
     const updateData = {
       name: productData.label,
       price: productData.discountedPrice || productData.originalPrice,
       originalPrice: productData.originalPrice,
       discountedPrice: productData.discountedPrice || null,
+      discount: discountPercentage,
       description: productData.description || '',
       imageUrl: imageUrl,
       stockQuantity: productData.quantity || 0,
       inStock: (productData.quantity || 0) > 0 && productData.status === 'available',
       status: productData.status || 'available',
       tags: productData.tags || [],
+      category: productData.category || 'General',
       updatedAt: Timestamp.now(),
     };
 

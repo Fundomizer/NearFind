@@ -21,6 +21,7 @@ export default function SearchScreen() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [maxDistance, setMaxDistance] = useState(10); // km
+  const [distanceFilterEnabled, setDistanceFilterEnabled] = useState(false);
   const [minDiscount, setMinDiscount] = useState(0); // percentage
   const [priceRange, setPriceRange] = useState([0, 1000]); // PHP
   const [sortBy, setSortBy] = useState('distance'); // distance, price, discount
@@ -170,8 +171,8 @@ export default function SearchScreen() {
       filtered = filtered.filter(product => product.category === selectedCategory);
     }
 
-    // Distance filter
-    if (userLocation) {
+    // Distance filter (only apply when user enabled it)
+    if (userLocation && distanceFilterEnabled) {
       filtered = filtered.filter(product => product.distance <= maxDistance);
     }
 
@@ -208,7 +209,7 @@ export default function SearchScreen() {
     setMaxDistance(10);
     setMinDiscount(0);
     setPriceRange([0, 1000]);
-    setSortBy('distance');
+    setDistanceFilterEnabled(false);
   };
 
   const getActiveFilterCount = () => {
@@ -277,6 +278,10 @@ export default function SearchScreen() {
   };
 
   const getProductImage = (imageUrl) => {
+    // If it's a Firebase Storage URL (HTTPS), return it as a URI
+    if (imageUrl && imageUrl.startsWith('https://')) {
+      return { uri: imageUrl };
+    }
     // Try to match with local assets
     if (imageMap[imageUrl]) {
       return imageMap[imageUrl];
@@ -613,7 +618,10 @@ export default function SearchScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.applyButton]}
-                onPress={() => setShowFilterModal(false)}
+                onPress={() => {
+                  setDistanceFilterEnabled(true);
+                  setShowFilterModal(false);
+                }}
               >
                 <Text style={styles.applyButtonText}>Apply Filters</Text>
               </TouchableOpacity>

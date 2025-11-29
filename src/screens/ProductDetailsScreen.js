@@ -29,6 +29,11 @@ export default function ProductDetailsScreen({ route, navigation }) {
   };
 
   const getProductImage = (imageUrl) => {
+    // If it's a Firebase Storage URL (HTTPS), return it as a URI
+    if (imageUrl && imageUrl.startsWith('https://')) {
+      return { uri: imageUrl };
+    }
+    // Try to match with local assets
     if (imageMap[imageUrl]) {
       return imageMap[imageUrl];
     }

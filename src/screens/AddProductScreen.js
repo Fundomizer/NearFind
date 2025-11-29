@@ -13,6 +13,7 @@ export default function AddProductScreen({ onBack, onSaveProduct, editProduct })
   const [status, setStatus] = useState(editProduct?.status || 'available');
   const [tags, setTags] = useState(editProduct?.tags?.join(', ') || '');
   const [quantity, setQuantity] = useState(editProduct?.quantity?.toString() || editProduct?.stockQuantity?.toString() || '0');
+  const [category, setCategory] = useState(editProduct?.category || 'Food');
   const [saving, setSaving] = useState(false);
 
   const handleImageUpload = async () => {
@@ -21,7 +22,7 @@ export default function AddProductScreen({ onBack, onSaveProduct, editProduct })
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.8, // High quality since we're using Firebase Storage now
       });
       if (!result.canceled) {
         setProductImage(result.assets[0].uri);
@@ -33,7 +34,21 @@ export default function AddProductScreen({ onBack, onSaveProduct, editProduct })
   };
 
   const handleSaveProduct = async () => {
-    if (!productImage || !label || !originalPrice) {
+    // Debug logging
+    console.log('Validation check:', {
+      hasImage: !!productImage,
+      hasLabel: !!label,
+      hasOriginalPrice: !!originalPrice,
+      productImage,
+      label,
+      originalPrice
+    });
+
+    // Trim whitespace from inputs
+    const trimmedLabel = label?.trim();
+    const trimmedPrice = originalPrice?.trim();
+
+    if (!productImage || !trimmedLabel || !trimmedPrice) {
       Alert.alert('Missing Information', 'Please fill in at least product image, label, and original price.');
       return;
     }
@@ -42,13 +57,14 @@ export default function AddProductScreen({ onBack, onSaveProduct, editProduct })
 
     const productData = {
       image: productImage,
-      label,
-      originalPrice: parseFloat(originalPrice),
-      discountedPrice: discountedPrice ? parseFloat(discountedPrice) : null,
-      description,
+      label: trimmedLabel,
+      originalPrice: parseFloat(trimmedPrice),
+      discountedPrice: discountedPrice?.trim() ? parseFloat(discountedPrice.trim()) : null,
+      description: description?.trim() || '',
       status,
       tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
       quantity: parseInt(quantity) || 0,
+      category,
     };
 
     try {
@@ -78,6 +94,7 @@ export default function AddProductScreen({ onBack, onSaveProduct, editProduct })
   };
 
   const statusOptions = ['available', 'out of stock', 'pre-order'];
+  const categoryOptions = ['Food', 'School Supplies'];
 
   return (
     <View style={styles.container}>
@@ -102,6 +119,16 @@ export default function AddProductScreen({ onBack, onSaveProduct, editProduct })
         <View style={styles.formSection}>
           <Text style={styles.label}>Product Name</Text>
           <TextInput style={styles.input} placeholder="Enter product name" value={label} onChangeText={setLabel} placeholderTextColor="#999" />
+        </View>
+        <View style={styles.formSection}>
+          <Text style={styles.label}>Category</Text>
+          <View style={styles.statusContainer}>
+            {categoryOptions.map((option) => (
+              <TouchableOpacity key={option} style={[styles.statusButton, category === option && styles.statusButtonActive]} onPress={() => setCategory(option)}>
+                <Text style={[styles.statusButtonText, category === option && styles.statusButtonTextActive]}>{option}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
         <View style={styles.formSection}>
           <Text style={styles.label}>Original Price</Text>

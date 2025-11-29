@@ -41,13 +41,25 @@ export default function HomeScreen() {
 
     // Subscribe to real-time products updates
     useEffect(() => {
-        const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
-            const productsData = [];
-            snapshot.forEach((doc) => {
-                productsData.push({ id: doc.id, ...doc.data() });
-            });
+        const unsubscribe = onSnapshot(
+            collection(db, 'products'),
+            (snapshot) => {
+                const productsData = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    productsData.push({ id: doc.id, ...data });
+                });
 
-            let productsWithDistance = productsData;
+                console.log('HomeScreen: Loaded', productsData.length, 'products from Firestore');
+                if (productsData.length > 0) {
+                    console.log('HomeScreen: First product name:', productsData[0].name);
+                    console.log('HomeScreen: First product category:', productsData[0].category);
+                    console.log('HomeScreen: First product has imageUrl:', !!productsData[0].imageUrl);
+                    console.log('HomeScreen: First product imageUrl:', productsData[0].imageUrl);
+                    console.log('HomeScreen: ImageUrl starts with https:', productsData[0].imageUrl?.startsWith('https://'));
+                }
+
+                let productsWithDistance = productsData;
 
             if (userLocation) {
                 productsWithDistance = productsData.map(product => ({
@@ -69,6 +81,10 @@ export default function HomeScreen() {
             }
 
             setProducts(productsWithDistance);
+            setLoading(false);
+        },
+        (error) => {
+            console.error('HomeScreen: Error in products listener:', error);
             setLoading(false);
         });
 
@@ -272,8 +288,13 @@ export default function HomeScreen() {
         });
     };
 
-    const getProductImage = (imageName) => {
-        return imageMap[imageName] || imageMap['honey.jpg'];
+    const getProductImage = (imageUrl) => {
+      // If it's a Firebase Storage URL (HTTPS), return it as a URI
+      if (imageUrl && imageUrl.startsWith('https://')) {
+        return { uri: imageUrl };
+      }
+      // Otherwise, try to match with local assets
+      return imageMap[imageUrl] || imageMap['honey.jpg'];
     };
 
     const renderCarouselItem = ({ item }) => (
@@ -379,25 +400,27 @@ export default function HomeScreen() {
         ) : products.length > 0 ? (
           <>
             {/* Hot Deals Carousel */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <View style={styles.sectionTitleContainer}>
-                  <Icon name="flame" size={20} color="#FF6B6B" />
-                  <Text style={styles.sectionTitle}>Hot Deals</Text>
+            {products.filter(p => p.discount > 0).length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionTitleContainer}>
+                    <Icon name="flame" size={20} color="#FF6B6B" />
+                    <Text style={styles.sectionTitle}>Hot Deals</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => navigation.navigate('Market')}>
+                    <Text style={styles.seeAllText}>See All</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity onPress={() => navigation.navigate('Market')}>
-                  <Text style={styles.seeAllText}>See All</Text>
-                </TouchableOpacity>
+                <FlatList
+                  data={products.filter(p => p.discount > 0).slice(0, 10)}
+                  renderItem={renderCarouselItem}
+                  keyExtractor={(item) => item.id}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.carousel}
+                />
               </View>
-              <FlatList
-                data={products.filter(p => p.discount > 0).slice(0, 10)}
-                renderItem={renderCarouselItem}
-                keyExtractor={(item) => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.carousel}
-              />
-            </View>
+            )}
 
             {/* Favorites */}
             <View style={styles.section}>

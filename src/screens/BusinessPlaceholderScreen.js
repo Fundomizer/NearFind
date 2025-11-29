@@ -364,209 +364,146 @@ export default function BusinessPlaceholderScreen() {
         );
     }
 
-    return ( <
-            View style = { styles.container } >
-            <
-            View style = { styles.header } >
-            <
-            TouchableOpacity onPress = { handleLogoPress }
-            style = { styles.logoContainer } > {
-                businessLogo ? ( <
-                    Image source = {
-                        { uri: businessLogo }
-                    }
-                    style = { styles.logoImage }
+    return (
+        <View style={styles.container}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={handleLogoPress} style={styles.logoContainer}>
+                    {businessLogo ? (
+                        <Image source={{ uri: businessLogo }} style={styles.logoImage} />
+                    ) : (
+                        <View style={styles.logoPlaceholder}>
+                            <Icon name="business" size={24} color="#4CAF50" />
+                        </View>
+                    )}
+                </TouchableOpacity>
+
+                <Text style={styles.headerTitle}>{companyName}</Text>
+
+                <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+                    <Icon name="log-out-outline" size={24} color="#333" />
+                </TouchableOpacity>
+            </View>
+
+            <View style={styles.searchContainer}>
+                <View style={styles.searchInputWrapper}>
+                    <Icon name="search-outline" size={20} color="#999" style={styles.searchIcon} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search..."
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        placeholderTextColor="#999"
                     />
-                ) : ( <
-                    View style = { styles.logoPlaceholder } >
-                    <
-                    Icon name = "business"
-                    size = { 24 }
-                    color = "#4CAF50" / >
-                    <
-                    /View>
-                )
-            } <
-            /TouchableOpacity> <
-            Text style = { styles.headerTitle } > { companyName } < /Text> <
-            TouchableOpacity onPress = { handleLogout }
-            style = { styles.logoutButton } >
-            <
-            Icon name = "log-out-outline"
-            size = { 24 }
-            color = "#333" / >
-            <
-            /TouchableOpacity> < /
-            View > <
-            View style = { styles.searchContainer } >
-            <
-            View style = { styles.searchInputWrapper } >
-            <
-            Icon name = "search-outline"
-            size = { 20 }
-            color = "#999"
-            style = { styles.searchIcon }
-            /> <
-            TextInput style = { styles.searchInput }
-            placeholder = "Search..."
-            value = { searchQuery }
-            onChangeText = { setSearchQuery }
-            placeholderTextColor = "#999" / >
-            <
-            /View> <
-            TouchableOpacity style = { styles.filterButton }
-            onPress = { handleFilterPress } >
-            <
-            Icon name = "filter-outline"
-            size = { 24 }
-            color = { selectedFilter ? "#4CAF50" : "#333" }
-            /> {
-            selectedFilter && < View style = { styles.filterBadge }
-            />} < /
-            TouchableOpacity > <
-            /View> {
-            selectedFilter && ( <
-                View style = { styles.filterIndicator } >
-                <
-                Text style = { styles.filterText } > Filtered by: { selectedFilter } < /Text> <
-                TouchableOpacity onPress = {
-                    () => setSelectedFilter(null)
-                }
-                style = { styles.clearFilter } >
-                <
-                Icon name = "close-circle"
-                size = { 20 }
-                color = "#4CAF50" / >
-                <
-                /TouchableOpacity> < /
-                View >
-            )
-        } <
-        ScrollView style = { styles.scrollContent } >
-        <
-        View style = { styles.promoSection } >
-        <
-        Text style = { styles.sectionTitle } > School Promo < /Text> <
-    ScrollView horizontal showsHorizontalScrollIndicator = { false }
-    style = { styles.carousel }
-    contentContainerStyle = { styles.carouselContent } > {
-            promoImages.map((image, index) => ( <
-                TouchableOpacity key = { index }
-                style = { styles.carouselItem }
-                onPress = {
-                    () => handleImagePress(index)
-                } >
-                <
-                Image source = {
-                    { uri: image }
-                }
-                style = { styles.carouselImage }
-                /> < /
-                TouchableOpacity >
-            ))
-        } <
-        TouchableOpacity style = { styles.uploadPlaceholder }
-    onPress = { handleImageUpload } >
-        <
-        Icon name = "cloud-upload-outline"
-    size = { 40 }
-    color = "#999" / >
-        <
-        Text style = { styles.uploadText } > Upload Image < /Text> < /
-        TouchableOpacity > <
-        /ScrollView> < /
-        View > {
-            Object.keys(productsByTag).map((tag) => ( <
-                View key = { tag }
-                style = { styles.promoSection } >
-                <
-                Text style = { styles.sectionTitle } > { tag.charAt(0).toUpperCase() + tag.slice(1) } < /Text> <
-                ScrollView horizontal showsHorizontalScrollIndicator = { false }
-                style = { styles.carousel }
-                contentContainerStyle = { styles.carouselContent } > {
-                    productsByTag[tag].map((product) => ( <
-                        TouchableOpacity key = { product.id }
-                        style = { styles.productCard }
-                        onPress = {
-                            () => handleProductPress(product)
-                        } >
-                        <
-                        Image source = {
-                            { uri: product.image || product.imageUrl }
-                        }
-                        style = { styles.productImage }
-                        /> <
-                        View style = { styles.productInfo } >
-                        <
-                        Text style = { styles.productName }
-                        numberOfLines = { 1 } > { product.label || product.name } < /Text> <
-                        View style = { styles.priceContainer } > {
-                            product.discountedPrice ? ( <
+                </View>
+
+                <TouchableOpacity style={styles.filterButton} onPress={handleFilterPress}>
+                    <Icon name="filter-outline" size={24} color={selectedFilter ? '#4CAF50' : '#333'} />
+                    {selectedFilter && <View style={styles.filterBadge} />}
+                </TouchableOpacity>
+            </View>
+
+            {selectedFilter && (
+                <View style={styles.filterIndicator}>
+                    <Text style={styles.filterText}>Filtered by: {selectedFilter}</Text>
+                    <TouchableOpacity onPress={() => setSelectedFilter(null)} style={styles.clearFilter}>
+                        <Icon name="close-circle" size={20} color="#4CAF50" />
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            <ScrollView style={styles.scrollContent} contentContainerStyle={{ paddingBottom: 120 }}>
+                <View style={styles.promoSection}>
+                    <Text style={styles.sectionTitle}>School Promo</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel} contentContainerStyle={styles.carouselContent}>
+                        {promoImages.map((image, index) => (
+                            <TouchableOpacity key={index} style={styles.carouselItem} onPress={() => handleImagePress(index)}>
+                                <Image source={{ uri: image }} style={styles.carouselImage} />
+                            </TouchableOpacity>
+                        ))}
+
+                        <TouchableOpacity style={styles.uploadPlaceholder} onPress={handleImageUpload}>
+                            <Icon name="cloud-upload-outline" size={40} color="#999" />
+                            <Text style={styles.uploadText}>Upload Image</Text>
+                        </TouchableOpacity>
+                    </ScrollView>
+                </View>
+
+                {Object.keys(productsByTag).map((tag) => (
+                    <View key={tag} style={styles.promoSection}>
+                        <Text style={styles.sectionTitle}>{tag.charAt(0).toUpperCase() + tag.slice(1)}</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.carousel} contentContainerStyle={styles.carouselContent}>
+                            {productsByTag[tag].map((product) => (
+                                <TouchableOpacity
+                                    key={product.id}
+                                    style={styles.productCard}
+                                    onPress={() => handleProductPress(product)}
                                 >
-                                <
-                                Text style = { styles.discountedPrice } > ₱{ product.discountedPrice } < /Text> <
-                                Text style = { styles.originalPriceStrike } > ₱{ product.originalPrice } < /Text> < /
-                                >
-                            ) : ( <
-                                Text style = { styles.productPrice } > ₱{ product.originalPrice || product.price } < /Text>
-                            )
-                        } <
-                        /View> <
-                        Text style = { styles.quantityText } > Qty: { product.quantity || product.stockQuantity } < /Text> <
-                        View style = {
-                            [styles.statusBadge, product.status === 'available' ? styles.statusAvailable : product.status === 'out of stock' ? styles.statusOutOfStock : styles.statusPreOrder]
-                        } >
-                        <
-                        Text style = { styles.statusText } > { product.status } < /Text> < /
-                        View > <
-                        /View> < /
-                        TouchableOpacity >
-                    ))
-                } <
-                /ScrollView> < /
-                View >
-            ))
-        } <
-        /ScrollView> <
-    View style = { styles.bottomNav } >
-        <
-        TouchableOpacity style = { styles.navButton }
-    onPress = {
-            () => setActiveTab('home')
-        } >
-        <
-        Icon name = { activeTab === 'home' ? 'home' : 'home-outline' }
-    size = { 28 }
-    color = { activeTab === 'home' ? '#4CAF50' : '#999' }
-    /> < /
-    TouchableOpacity > <
-        TouchableOpacity style = { styles.navButton }
-    onPress = { handleAddButtonPress } >
-        <
-        View style = { styles.addButton } >
-        <
-        Icon name = "add"
-    size = { 32 }
-    color = "#fff" / >
-        <
-        /View> < /
-        TouchableOpacity > <
-        TouchableOpacity style = { styles.navButton }
-    onPress = {
-            () => {
-                setActiveTab('chat');
-                setShowChat(true);
-            }
-        } >
-        <
-        Icon name = { activeTab === 'chat' ? 'chatbubble' : 'chatbubble-outline' }
-    size = { 28 }
-    color = { activeTab === 'chat' ? '#4CAF50' : '#999' }
-    /> < /
-    TouchableOpacity > <
-        /View> < /
-        View >
-);
+                                    <Image source={{ uri: product.image || product.imageUrl }} style={styles.productImage} />
+
+                                    <TouchableOpacity
+                                        style={styles.deleteButton}
+                                        onPress={async () => {
+                                            Alert.alert('Remove Product', `Are you sure you want to remove "${product.label || product.name}"?`, [
+                                                { text: 'Cancel', style: 'cancel' },
+                                                {
+                                                    text: 'Remove',
+                                                    style: 'destructive',
+                                                    onPress: async () => {
+                                                        const result = await deleteProduct(product.id);
+                                                        if (result.success) {
+                                                            Alert.alert('Success', 'Product removed successfully');
+                                                        } else {
+                                                            Alert.alert('Error', result.error || 'Failed to remove product');
+                                                        }
+                                                    }
+                                                }
+                                            ]);
+                                        }}
+                                    >
+                                        <Icon name="trash-outline" size={18} color="#fff" />
+                                    </TouchableOpacity>
+
+                                    <View style={styles.productInfo}>
+                                        <Text style={styles.productName} numberOfLines={1}>{product.label || product.name}</Text>
+                                        <View style={styles.priceContainer}>
+                                            {product.discountedPrice ? (
+                                                <>
+                                                    <Text style={styles.discountedPrice}>₱{product.discountedPrice}</Text>
+                                                    <Text style={styles.originalPriceStrike}>₱{product.originalPrice}</Text>
+                                                </>
+                                            ) : (
+                                                <Text style={styles.productPrice}>₱{product.originalPrice || product.price}</Text>
+                                            )}
+                                        </View>
+                                        <Text style={styles.quantityText}>Qty: {product.quantity || product.stockQuantity}</Text>
+                                        <View style={[styles.statusBadge, product.status === 'available' ? styles.statusAvailable : product.status === 'out of stock' ? styles.statusOutOfStock : styles.statusPreOrder]}>
+                                            <Text style={styles.statusText}>{product.status}</Text>
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                ))}
+            </ScrollView>
+
+            <View style={styles.bottomNav}>
+                <TouchableOpacity style={styles.navButton} onPress={() => setActiveTab('home')}>
+                    <Icon name={activeTab === 'home' ? 'home' : 'home-outline'} size={28} color={activeTab === 'home' ? '#4CAF50' : '#999'} />
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.navButton} onPress={handleAddButtonPress}>
+                    <View style={styles.addButton}>
+                        <Icon name="add" size={32} color="#fff" />
+                    </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.navButton} onPress={() => { setActiveTab('chat'); setShowChat(true); }}>
+                    <Icon name={activeTab === 'chat' ? 'chatbubble' : 'chatbubble-outline'} size={28} color={activeTab === 'chat' ? '#4CAF50' : '#999'} />
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -599,6 +536,7 @@ const styles = StyleSheet.create({
     uploadText: { marginTop: 8, fontSize: 14, color: '#999', fontWeight: '600' },
     productCard: { width: 160, backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#e0e0e0' },
     productImage: { width: '100%', height: 160, resizeMode: 'cover' },
+    deleteButton: { position: 'absolute', top: 8, right: 8, width: 34, height: 34, borderRadius: 17, backgroundColor: '#E53935', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
     productInfo: { padding: 12 },
     productName: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 6 },
     priceContainer: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },

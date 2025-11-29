@@ -13,6 +13,15 @@ export default function SearchStackNavigator() {
       screenOptions={{
         headerShown: false,
       }}
+      listeners={({ navigation }) => ({
+        tabPress: (e) => {
+          e.preventDefault();
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'SearchHome' }],
+          });
+        },
+      })}
     >
       <Stack.Screen name="SearchHome" component={SearchScreen} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
