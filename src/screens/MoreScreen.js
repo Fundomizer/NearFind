@@ -1,161 +1,156 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Alert, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { logOut } from '../services/authService';
+import { auth } from '../config/firebase';
+import { useNavigation } from '@react-navigation/native';
 
 export default function MoreScreen() {
-  const [activeTab, setActiveTab] = useState('Feed');
-  const [likedReviews, setLikedReviews] = useState({});
+  const navigation = useNavigation();
+  const [userEmail, setUserEmail] = useState('');
+  const [userName, setUserName] = useState('');
 
-  const reviews = [
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (user) {
+      setUserEmail(user.email || 'No email');
+      // Extract name from email (before @)
+      const emailName = user.email?.split('@')[0] || 'User';
+      setUserName(emailName.charAt(0).toUpperCase() + emailName.slice(1));
+    }
+  }, []);
+
+  const getInitials = () => {
+    if (userName) {
+      const names = userName.split(' ');
+      if (names.length >= 2) {
+        return `${names[0][0]}${names[1][0]}`.toUpperCase();
+      }
+      return userName.substring(0, 2).toUpperCase();
+    }
+    return 'U';
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            const result = await logOut();
+            if (!result.success) {
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const accountSections = [
     {
-      id: 1,
-      userName: 'Maria Santos',
-      shopName: 'Artisan Bakery',
-      rating: 5,
-      timeAgo: '2h ago',
-      reviewText: 'Amazing sourdough bread! Fresh and delicious. The staff was very friendly too.',
-      productImage: require('../../assets/images/products/sour dough bread.jpg'),
+      title: 'Account Settings',
+      items: [
+        { icon: 'person-outline', label: 'Edit Profile', onPress: () => Alert.alert('Coming Soon', 'Edit profile feature coming soon!') },
+        { icon: 'mail-outline', label: 'Email', subtitle: userEmail, onPress: () => {} },
+        { icon: 'lock-closed-outline', label: 'Change Password', onPress: () => Alert.alert('Coming Soon', 'Change password feature coming soon!') },
+        { icon: 'notifications-outline', label: 'Notifications', onPress: () => Alert.alert('Coming Soon', 'Notification settings coming soon!') },
+      ],
     },
     {
-      id: 2,
-      userName: 'Juan dela Cruz',
-      shopName: 'Baguio School Supplies',
-      rating: 4,
-      timeAgo: '5h ago',
-      reviewText: 'Great selection and affordable prices. Found everything I needed for the new school year.',
-      productImage: require('../../assets/images/products/school supplies.jpg'),
+      title: 'Support',
+      items: [
+        { icon: 'help-circle-outline', label: 'Help Center', onPress: () => Alert.alert('Coming Soon', 'Help center coming soon!') },
+        { icon: 'chatbubbles-outline', label: 'Contact Support', onPress: () => Alert.alert('Coming Soon', 'Contact support feature coming soon!') },
+        { icon: 'information-circle-outline', label: 'About', onPress: () => Alert.alert('About', 'TechnoMVP - Your local marketplace\nVersion 1.0.0') },
+        { icon: 'shield-checkmark-outline', label: 'Privacy Policy', onPress: () => Alert.alert('Coming Soon', 'Privacy policy coming soon!') },
+      ],
     },
   ];
-
-  const getInitials = (name) => {
-    const names = name.split(' ');
-    const firstInitial = names[0]?.charAt(0) || '';
-    const lastInitial = names[names.length - 1]?.charAt(0) || '';
-    return `${firstInitial}${lastInitial}`.toUpperCase();
-  };
-
-  const toggleLike = (reviewId) => {
-    setLikedReviews(prev => ({
-      ...prev,
-      [reviewId]: !prev[reviewId]
-    }));
-  };
 
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Community</Text>
-        <Text style={styles.subtitle}>Share experiences and discover favorites</Text>
+        <Text style={styles.title}>Account</Text>
+        <Text style={styles.subtitle}>Manage your profile and preferences</Text>
       </View>
 
-      {/* Tab Container */}
-      <View style={styles.tabContainer}>
-        <View style={styles.ovalContainer}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'Feed' && styles.activeTab]}
-            onPress={() => setActiveTab('Feed')}
-          >
-            <Text style={[styles.tabText, activeTab === 'Feed' && styles.activeTabText]}>
-              Feed
-            </Text>
-          </TouchableOpacity>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Profile Section */}
+        <View style={styles.profileSection}>
+          <View style={styles.profileCard}>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{getInitials()}</Text>
+              </View>
+              <TouchableOpacity style={styles.editAvatarButton}>
+                <Ionicons name="camera" size={16} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.profileInfo}>
+              <Text style={styles.profileName}>{userName}</Text>
+              <Text style={styles.profileEmail}>{userEmail}</Text>
+            </View>
+          </View>
+        </View>
 
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'Reviews' && styles.activeTab]}
-            onPress={() => setActiveTab('Reviews')}
-          >
-            <Text style={[styles.tabText, activeTab === 'Reviews' && styles.activeTabText]}>
-              Reviews
-            </Text>
-          </TouchableOpacity>
+        {/* Account Sections */}
+        {accountSections.map((section, sectionIndex) => (
+          <View key={sectionIndex} style={styles.section}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <View style={styles.sectionCard}>
+              {section.items.map((item, itemIndex) => (
+                <TouchableOpacity
+                  key={itemIndex}
+                  style={[
+                    styles.menuItem,
+                    itemIndex !== section.items.length - 1 && styles.menuItemBorder,
+                  ]}
+                  onPress={item.onPress}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <View style={styles.iconContainer}>
+                      <Ionicons name={item.icon} size={22} color="#4CAF50" />
+                    </View>
+                    <View style={styles.menuItemText}>
+                      <Text style={styles.menuItemLabel}>{item.label}</Text>
+                      {item.subtitle && (
+                        <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
+                      )}
+                    </View>
+                  </View>
+                  {!item.subtitle && (
+                    <Ionicons name="chevron-forward" size={20} color="#999" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        ))}
 
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'Share' && styles.activeTab]}
-            onPress={() => setActiveTab('Share')}
-          >
-            <Text style={[styles.tabText, activeTab === 'Share' && styles.activeTabText]}>
-              Share
-            </Text>
+        {/* Logout Button */}
+        <View style={styles.logoutSection}>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <View style={styles.logoutButtonContent}>
+              <Ionicons name="log-out-outline" size={22} color="#FF5252" />
+              <Text style={styles.logoutButtonText}>Logout</Text>
+            </View>
           </TouchableOpacity>
         </View>
-      </View>
 
-      {/* Feed Content */}
-      {activeTab === 'Feed' && (
-        <ScrollView style={styles.feedContent} showsVerticalScrollIndicator={false}>
-          {reviews.map((review) => (
-            <View key={review.id} style={styles.reviewCard}>
-              {/* User Info */}
-              <View style={styles.reviewHeader}>
-                <View style={styles.userInfo}>
-                  <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarInitials}>{getInitials(review.userName)}</Text>
-                  </View>
-                  <View style={styles.userDetails}>
-                    <Text style={styles.userName}>{review.userName}</Text>
-                    <Text style={styles.shopName}>{review.shopName}</Text>
-                  </View>
-                </View>
-                <Text style={styles.timeAgo}>{review.timeAgo}</Text>
-              </View>
-
-              {/* Rating */}
-              <View style={styles.ratingContainer}>
-                {[...Array(5)].map((_, index) => (
-                  <Ionicons
-                    key={index}
-                    name={index < review.rating ? 'star' : 'star-outline'}
-                    size={16}
-                    color="#F9A825"
-                  />
-                ))}
-              </View>
-
-              {/* Review Text */}
-              <Text style={styles.reviewText}>{review.reviewText}</Text>
-
-              {/* Product Image */}
-              <Image source={review.productImage} style={styles.reviewImage} />
-
-              {/* Actions */}
-              <View style={styles.reviewActions}>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => toggleLike(review.id)}
-                >
-                  <Ionicons
-                    name={likedReviews[review.id] ? "heart" : "heart-outline"}
-                    size={20}
-                    color={likedReviews[review.id] ? "#FF4444" : "#666"}
-                  />
-                  <Text style={[styles.actionText, likedReviews[review.id] && styles.likedText]}>
-                    Like
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="chatbubble-outline" size={20} color="#666" />
-                  <Text style={styles.actionText}>Comment</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton}>
-                  <Ionicons name="share-outline" size={20} color="#666" />
-                  <Text style={styles.actionText}>Share</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      )}
-
-      {/* Vendor Dashboard Button */}
-      <View style={styles.vendorSection}>
-        <TouchableOpacity style={styles.vendorButton}>
-          <View style={styles.vendorButtonContent}>
-            <Ionicons name="storefront-outline" size={20} color="#333" />
-            <Text style={styles.vendorButtonText}>Vendor Dashboard</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
+        {/* App Version */}
+        <View style={styles.versionContainer}>
+          <Text style={styles.versionText}>Version 1.0.0</Text>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -163,10 +158,10 @@ export default function MoreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
   },
   header: {
-    paddingTop: 60,
+    paddingTop: Platform.OS === 'ios' ? 60 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     backgroundColor: '#fff',
@@ -177,163 +172,167 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: '#333',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
     color: '#999',
   },
-  tabContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  ovalContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 25,
-    padding: 4,
-    gap: 4,
-    width: '100%',
-  },
-  tab: {
+  content: {
     flex: 1,
+  },
+  profileSection: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 20,
-    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 16,
   },
-  activeTab: {
-    backgroundColor: '#4CAF50',
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-  },
-  activeTabText: {
-    color: '#fff',
-  },
-  vendorSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  vendorButton: {
+  profileCard: {
     backgroundColor: '#fff',
-    paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  vendorButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 16,
   },
-  vendorButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  feedContent: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  reviewCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  reviewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  avatarCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#fff',
+  avatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
   },
-  avatarInitials: {
-    fontSize: 18,
-    fontWeight: '400',
+  avatarText: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#fff',
+  },
+  editAvatarButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#4CAF50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: '700',
     color: '#333',
+    marginBottom: 4,
   },
-  userDetails: {
-    gap: 2,
-  },
-  userName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-  },
-  shopName: {
-    fontSize: 13,
+  profileEmail: {
+    fontSize: 14,
     color: '#666',
   },
-  timeAgo: {
-    fontSize: 12,
-    color: '#999',
+  section: {
+    marginBottom: 24,
+    paddingHorizontal: 20,
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    gap: 4,
-    marginBottom: 10,
-  },
-  reviewText: {
-    fontSize: 14,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
     color: '#333',
-    lineHeight: 20,
     marginBottom: 12,
+    marginLeft: 4,
   },
-  reviewImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 12,
+  sectionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  reviewActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-  },
-  actionButton: {
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
   },
-  actionText: {
-    fontSize: 14,
-    color: '#666',
+  menuItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
-  likedText: {
-    color: '#FF4444',
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  menuItemText: {
+    flex: 1,
+  },
+  menuItemLabel: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#333',
+  },
+  menuItemSubtitle: {
+    fontSize: 13,
+    color: '#999',
+    marginTop: 2,
+  },
+  logoutSection: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 24,
+  },
+  logoutButton: {
+    backgroundColor: '#fff',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FF5252',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  logoutButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FF5252',
+  },
+  versionContainer: {
+    alignItems: 'center',
+    paddingBottom: 30,
+  },
+  versionText: {
+    fontSize: 12,
+    color: '#999',
   },
 });

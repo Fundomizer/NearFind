@@ -1,80 +1,309 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert, Modal } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
+import * as Location from 'expo-location';
+import { getProducts } from '../services/firestoreService';
+import { useNavigation } from '@react-navigation/native';
+import { addToFavorites, removeFromFavorites, subscribeToFavorites } from '../services/favoritesService';
+import { db } from '../config/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 export default function SearchScreen() {
+  const navigation = useNavigation();
   const [searchText, setSearchText] = useState('');
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState(null);
+  const [viewMode, setViewMode] = useState('products'); // 'products' or 'shops'
 
-  // Product data
-  const products = [
-    {
-      id: 1,
-      name: 'School Supply Kit',
-      shopName: 'Baguio School Supplies',
-      price: 599.00,
-      originalPrice: 750.00,
-      discount: 20,
-      distance: 1.2,
-      image: require('../../assets/images/products/school supplies.jpg'),
-    },
-    {
-      id: 2,
-      name: 'Peanut Butter',
-      shopName: 'Manila Tantlaad Store',
-      price: 149.00,
-      originalPrice: null,
-      discount: null,
-      distance: 2.5,
-      image: require('../../assets/images/products/peanut butter.jpg'),
-    },
-    {
-      id: 3,
-      name: 'Artisan Sourdough Bread',
-      shopName: 'Artisan Bakery',
-      price: 79.00,
-      originalPrice: 120.00,
-      discount: 35,
-      distance: 0.8,
-      image: require('../../assets/images/products/sour dough bread.jpg'),
-    },
-    {
-      id: 4,
-      name: 'Ube Jam',
-      shopName: 'Good Shepherd Convent',
-      price: 199.00,
-      originalPrice: null,
-      discount: null,
-      distance: 3.1,
-      image: require('../../assets/images/products/ube jam.jpg'),
-    },
-    {
-      id: 5,
-      name: 'Lengua de Gato',
-      shopName: 'Baguio Pasalubong Center',
-      price: 59.00,
-      originalPrice: 120.00,
-      discount: 50,
-      distance: 1.7,
-      image: require('../../assets/images/products/lengua.jpg'),
-    },
-    {
-      id: 6,
-      name: 'Organic Honey',
-      shopName: 'Nature\'s Best',
-      price: 129.00,
-      originalPrice: null,
-      discount: null,
-      distance: 2.0,
-      image: require('../../assets/images/products/honey.jpg'),
-    },
-  ];
+  // Filter states
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [maxDistance, setMaxDistance] = useState(10); // km
+  const [distanceFilterEnabled, setDistanceFilterEnabled] = useState(false);
+  const [minDiscount, setMinDiscount] = useState(0); // percentage
+  const [priceRange, setPriceRange] = useState([0, 1000]); // PHP
+  const [sortBy, setSortBy] = useState('distance'); // distance, price, discount
+  const [favoritedProducts, setFavoritedProducts] = useState(new Set());
+
+  // Image mapping for local assets
+  const imageMap = {
+    'school supplies.jpg': require('../../assets/images/products/school supplies.jpg'),
+    'peanut_butter.jpg': require('../../assets/images/products/peanut butter.jpg'),
+    'sour_dough_bread.jpg': require('../../assets/images/products/sour dough bread.jpg'),
+    'ube_jam.jpg': require('../../assets/images/products/ube jam.jpg'),
+    'lengua.jpg': require('../../assets/images/products/lengua.jpg'),
+    'honey.jpg': require('../../assets/images/products/honey.jpg'),
+  };
+
+  // Get user location
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status} = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({});
+          setUserLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+          });
+        }
+      } catch (error) {
+        console.log('Location error:', error);
+      }
+    })();
+  }, []);
+
+  // Subscribe to real-time products updates
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'products'), (snapshot) => {
+      const productsData = [];
+      snapshot.forEach((doc) => {
+        productsData.push({ id: doc.id, ...doc.data() });
+      });
+
+      // Calculate distance if user location is available
+      let productsWithDistance = productsData;
+      if (userLocation) {
+        productsWithDistance = productsData.map(product => ({
+          ...product,
+          distance: calculateDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            product.latitude,
+            product.longitude
+          )
+        }));
+      }
+
+      setProducts(productsWithDistance);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [userLocation]);
+
+  // Subscribe to user's favorites
+  useEffect(() => {
+    const unsubscribe = subscribeToFavorites((favorites) => {
+      const favoriteProductIds = new Set(favorites.map(fav => fav.productId));
+      setFavoritedProducts(favoriteProductIds);
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    const result = await getProducts();
+
+    if (result.success) {
+      let productsWithDistance = result.data;
+
+      // Calculate distance if user location is available
+      if (userLocation) {
+        productsWithDistance = result.data.map(product => ({
+          ...product,
+          distance: calculateDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            product.latitude,
+            product.longitude
+          )
+        }));
+
+        // Sort by distance
+        productsWithDistance.sort((a, b) => a.distance - b.distance);
+      } else {
+        // Default distance for products
+        productsWithDistance = result.data.map(product => ({
+          ...product,
+          distance: 0
+        }));
+      }
+
+      setProducts(productsWithDistance);
+      setFilteredProducts(productsWithDistance);
+    } else {
+      Alert.alert('Error', 'Failed to load products');
+    }
+    setLoading(false);
+  };
+
+  // Calculate distance between two coordinates (Haversine formula)
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radius of Earth in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    return parseFloat(distance.toFixed(1));
+  };
+
+  // Apply all filters
+  useEffect(() => {
+    applyFilters();
+  }, [searchText, products, selectedCategory, maxDistance, minDiscount, priceRange, sortBy]);
+
+  const applyFilters = () => {
+    let filtered = [...products];
+
+    // Search text filter
+    if (searchText.trim() !== '') {
+      filtered = filtered.filter(product =>
+        product.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        product.shopName.toLowerCase().includes(searchText.toLowerCase()) ||
+        product.category?.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+
+    // Category filter
+    if (selectedCategory !== 'All') {
+      filtered = filtered.filter(product => product.category === selectedCategory);
+    }
+
+    // Distance filter (only apply when user enabled it)
+    if (userLocation && distanceFilterEnabled) {
+      filtered = filtered.filter(product => product.distance <= maxDistance);
+    }
+
+    // Discount filter
+    if (minDiscount > 0) {
+      filtered = filtered.filter(product => (product.discount || 0) >= minDiscount);
+    }
+
+    // Price range filter
+    filtered = filtered.filter(product =>
+      product.price >= priceRange[0] && product.price <= priceRange[1]
+    );
+
+    // Sort products
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'price-low':
+          return a.price - b.price;
+        case 'price-high':
+          return b.price - a.price;
+        case 'discount':
+          return (b.discount || 0) - (a.discount || 0);
+        case 'distance':
+        default:
+          return a.distance - b.distance;
+      }
+    });
+
+    setFilteredProducts(filtered);
+  };
+
+  const resetFilters = () => {
+    setSelectedCategory('All');
+    setMaxDistance(10);
+    setMinDiscount(0);
+    setPriceRange([0, 1000]);
+    setDistanceFilterEnabled(false);
+  };
+
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (selectedCategory !== 'All') count++;
+    if (maxDistance !== 10) count++;
+    if (minDiscount > 0) count++;
+    if (priceRange[0] !== 0 || priceRange[1] !== 1000) count++;
+    return count;
+  };
+
+  const handleProductPress = (product) => {
+    navigation.navigate('ProductDetails', { product });
+  };
+
+  const toggleFavorite = async (product, event) => {
+    // Prevent product card press event
+    event.stopPropagation();
+
+    const isFavorited = favoritedProducts.has(product.id);
+
+    if (isFavorited) {
+      const result = await removeFromFavorites(product.id);
+      if (!result.success) {
+        Alert.alert('Error', 'Failed to remove from favorites');
+      }
+    } else {
+      const result = await addToFavorites(product);
+      if (!result.success) {
+        Alert.alert('Error', 'Failed to add to favorites');
+      }
+    }
+  };
+
+  // Get unique shops from products
+  const getShops = () => {
+    const shopMap = new Map();
+
+    filteredProducts.forEach(product => {
+      if (!shopMap.has(product.shopName)) {
+        shopMap.set(product.shopName, {
+          name: product.shopName,
+          latitude: product.latitude,
+          longitude: product.longitude,
+          distance: product.distance,
+          productCount: 1,
+          categories: new Set([product.category])
+        });
+      } else {
+        const shop = shopMap.get(product.shopName);
+        shop.productCount += 1;
+        shop.categories.add(product.category);
+      }
+    });
+
+    return Array.from(shopMap.values()).map(shop => ({
+      ...shop,
+      categories: Array.from(shop.categories)
+    })).sort((a, b) => a.distance - b.distance);
+  };
+
+  const handleShopPress = (shop) => {
+    // Filter products by shop and show them
+    setViewMode('products');
+    setSearchText(shop.name);
+  };
+
+  const getProductImage = (imageUrl) => {
+    // If it's a Firebase Storage URL (HTTPS), return it as a URI
+    if (imageUrl && imageUrl.startsWith('https://')) {
+      return { uri: imageUrl };
+    }
+    // Try to match with local assets
+    if (imageMap[imageUrl]) {
+      return imageMap[imageUrl];
+    }
+    return null;
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+        <Text style={styles.loadingText}>Loading products...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       {/* Search Bar Section */}
       <View style={styles.searchSection}>
         <View style={styles.searchBar}>
-          <Icon name="search" size={20} color="#999" style={styles.searchIcon} />
+          <Icon name="basket" size={20} color="#999" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search for deals and products..."
@@ -84,65 +313,322 @@ export default function SearchScreen() {
           />
         </View>
 
-        <TouchableOpacity style={styles.sortButton}>
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={() => setShowFilterModal(true)}
+        >
           <Icon name="options-outline" size={24} color="#4CAF50" />
+          {getActiveFilterCount() > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{getActiveFilterCount()}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
       {/* Results Header */}
       <View style={styles.resultsHeader}>
         <Text style={styles.itemsFound}>
-          <Text style={styles.itemsCount}>{products.length}</Text> products found
+          <Text style={styles.itemsCount}>
+            {viewMode === 'products' ? filteredProducts.length : getShops().length}
+          </Text> {viewMode === 'products' ? 'products' : 'shops'} found
         </Text>
 
         <View style={styles.viewToggle}>
-          <TouchableOpacity style={[styles.toggleButton, styles.activeToggle]}>
-            <Icon name="list" size={18} color="#fff" />
-            <Text style={styles.activeToggleText}>List</Text>
+          <TouchableOpacity
+            style={[styles.toggleButton, viewMode === 'products' && styles.activeToggle]}
+            onPress={() => setViewMode('products')}
+          >
+            <Icon name="grid" size={18} color={viewMode === 'products' ? "#fff" : "#4CAF50"} />
+            <Text style={viewMode === 'products' ? styles.activeToggleText : styles.toggleText}>
+              Products
+            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.toggleButton}>
-            <Icon name="map" size={18} color="#4CAF50" />
-            <Text style={styles.toggleText}>Map</Text>
+          <TouchableOpacity
+            style={[styles.toggleButton, viewMode === 'shops' && styles.activeToggle]}
+            onPress={() => setViewMode('shops')}
+          >
+            <Icon name="storefront" size={18} color={viewMode === 'shops' ? "#fff" : "#4CAF50"} />
+            <Text style={viewMode === 'shops' ? styles.activeToggleText : styles.toggleText}>
+              Shops
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Content Area - Product Grid */}
+      {/* Content Area - Product Grid or Shop List */}
       <ScrollView style={styles.content}>
-        <View style={styles.productGrid}>
-          {products.map((product) => (
-            <View key={product.id} style={styles.productCard}>
-              <View style={styles.productImage}>
-                {product.image ? (
-                  <Image source={product.image} style={styles.image} />
-                ) : (
-                  <Text style={styles.placeholderText}>Insert Image</Text>
-                )}
-                {product.discount && (
-                  <View style={styles.discountBadge}>
-                    <Text style={styles.discountText}>-{product.discount}%</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
-              <Text style={styles.shopName} numberOfLines={1}>{product.shopName}</Text>
-              {product.originalPrice ? (
-                <View style={styles.priceContainer}>
-                  <Text style={styles.originalPrice}>₱{product.originalPrice.toFixed(2)}</Text>
-                  <Text style={styles.productPrice}>₱{product.price.toFixed(2)}</Text>
+        {viewMode === 'products' ? (
+          <View style={styles.productGrid}>
+            {filteredProducts.map((product) => (
+              <TouchableOpacity
+                key={product.id}
+                style={styles.productCard}
+                onPress={() => handleProductPress(product)}
+              >
+                <View style={styles.productImage}>
+                  {getProductImage(product.imageUrl) ? (
+                    <Image source={getProductImage(product.imageUrl)} style={styles.image} />
+                  ) : (
+                    <View style={styles.placeholder}>
+                      <Icon name="image-outline" size={40} color="#ccc" />
+                    </View>
+                  )}
+                  {product.discount && (
+                    <View style={styles.discountBadge}>
+                      <Text style={styles.discountText}>-{product.discount}%</Text>
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={styles.favoriteIconButton}
+                    onPress={(e) => toggleFavorite(product, e)}
+                  >
+                    <Icon
+                      name={favoritedProducts.has(product.id) ? "heart" : "heart-outline"}
+                      size={20}
+                      color={favoritedProducts.has(product.id) ? "#E91E63" : "#fff"}
+                    />
+                  </TouchableOpacity>
                 </View>
-              ) : (
-                <Text style={styles.productPrice}>₱{product.price.toFixed(2)}</Text>
-              )}
-              <View style={styles.distanceContainer}>
-                <Icon name="location-outline" size={12} color="#999" />
-                <Text style={styles.productDistance}>{product.distance} km</Text>
-              </View>
-            </View>
-          ))}
-        </View>
+                <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+                <Text style={styles.shopName} numberOfLines={1}>{product.shopName}</Text>
+                {product.originalPrice ? (
+                  <View style={styles.priceContainer}>
+                    <Text style={styles.originalPrice}>₱{product.originalPrice.toFixed(2)}</Text>
+                    <Text style={styles.productPrice}>₱{product.price.toFixed(2)}</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.productPrice}>₱{product.price.toFixed(2)}</Text>
+                )}
+                <View style={styles.distanceContainer}>
+                  <Icon name="location-outline" size={12} color="#999" />
+                  <Text style={styles.productDistance}>
+                    {product.distance > 0 ? `${product.distance} km` : 'Location unavailable'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.shopList}>
+            {getShops().map((shop, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.shopCard}
+                onPress={() => handleShopPress(shop)}
+              >
+                <View style={styles.shopIconContainer}>
+                  <Icon name="storefront" size={32} color="#4CAF50" />
+                </View>
+                <View style={styles.shopInfo}>
+                  <Text style={styles.shopCardName}>{shop.name}</Text>
+                  <View style={styles.shopDetails}>
+                    <View style={styles.shopDetailItem}>
+                      <Icon name="cube-outline" size={14} color="#666" />
+                      <Text style={styles.shopDetailText}>{shop.productCount} products</Text>
+                    </View>
+                    <View style={styles.shopDetailItem}>
+                      <Icon name="location-outline" size={14} color="#666" />
+                      <Text style={styles.shopDetailText}>
+                        {shop.distance > 0 ? `${shop.distance} km` : 'Location unavailable'}
+                      </Text>
+                    </View>
+                  </View>
+                  {shop.categories.length > 0 && (
+                    <View style={styles.categoryTags}>
+                      {shop.categories.slice(0, 2).map((category, idx) => (
+                        <View key={idx} style={styles.categoryTag}>
+                          <Text style={styles.categoryTagText}>{category}</Text>
+                        </View>
+                      ))}
+                      {shop.categories.length > 2 && (
+                        <Text style={styles.moreCategoriesText}>+{shop.categories.length - 2} more</Text>
+                      )}
+                    </View>
+                  )}
+                </View>
+                <Icon name="chevron-forward" size={20} color="#ccc" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
+
+      {/* Filter Modal */}
+      <Modal
+        visible={showFilterModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowFilterModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.filterModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filters</Text>
+              <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+                <Icon name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.filterContent}>
+              {/* Category Filter */}
+              <Text style={styles.filterLabel}>Category</Text>
+              <View style={styles.categoryGrid}>
+                {['All', 'Food', 'School Supplies'].map((category) => (
+                  <TouchableOpacity
+                    key={category}
+                    style={[
+                      styles.categoryChip,
+                      selectedCategory === category && styles.categoryChipActive
+                    ]}
+                    onPress={() => setSelectedCategory(category)}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryChipText,
+                        selectedCategory === category && styles.categoryChipTextActive
+                      ]}
+                    >
+                      {category}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Sort By */}
+              <Text style={styles.filterLabel}>Sort By</Text>
+              <View style={styles.sortOptions}>
+                {[
+                  { value: 'distance', label: 'Nearest First', icon: 'location' },
+                  { value: 'price-low', label: 'Price: Low to High', icon: 'arrow-up' },
+                  { value: 'price-high', label: 'Price: High to Low', icon: 'arrow-down' },
+                  { value: 'discount', label: 'Best Deals', icon: 'pricetag' }
+                ].map((option) => (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.sortOption,
+                      sortBy === option.value && styles.sortOptionActive
+                    ]}
+                    onPress={() => setSortBy(option.value)}
+                  >
+                    <Icon
+                      name={option.icon}
+                      size={20}
+                      color={sortBy === option.value ? '#4CAF50' : '#666'}
+                    />
+                    <Text
+                      style={[
+                        styles.sortOptionText,
+                        sortBy === option.value && styles.sortOptionTextActive
+                      ]}
+                    >
+                      {option.label}
+                    </Text>
+                    {sortBy === option.value && (
+                      <Icon name="checkmark-circle" size={20} color="#4CAF50" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Distance Filter */}
+              <Text style={styles.filterLabel}>Max Distance: {maxDistance} km</Text>
+              <View style={styles.sliderContainer}>
+                <TouchableOpacity
+                  style={styles.sliderButton}
+                  onPress={() => setMaxDistance(Math.max(1, maxDistance - 1))}
+                >
+                  <Icon name="remove" size={20} color="#4CAF50" />
+                </TouchableOpacity>
+                <View style={styles.sliderTrack}>
+                  <View style={[styles.sliderFill, { width: `${(maxDistance / 20) * 100}%` }]} />
+                </View>
+                <TouchableOpacity
+                  style={styles.sliderButton}
+                  onPress={() => setMaxDistance(Math.min(20, maxDistance + 1))}
+                >
+                  <Icon name="add" size={20} color="#4CAF50" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Discount Filter */}
+              <Text style={styles.filterLabel}>Min Discount: {minDiscount}%</Text>
+              <View style={styles.sliderContainer}>
+                <TouchableOpacity
+                  style={styles.sliderButton}
+                  onPress={() => setMinDiscount(Math.max(0, minDiscount - 5))}
+                >
+                  <Icon name="remove" size={20} color="#4CAF50" />
+                </TouchableOpacity>
+                <View style={styles.sliderTrack}>
+                  <View style={[styles.sliderFill, { width: `${(minDiscount / 50) * 100}%` }]} />
+                </View>
+                <TouchableOpacity
+                  style={styles.sliderButton}
+                  onPress={() => setMinDiscount(Math.min(50, minDiscount + 5))}
+                >
+                  <Icon name="add" size={20} color="#4CAF50" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Price Range */}
+              <Text style={styles.filterLabel}>
+                Price Range: ₱{priceRange[0]} - ₱{priceRange[1]}
+              </Text>
+              <View style={styles.priceInputs}>
+                <View style={styles.priceInputGroup}>
+                  <Text style={styles.priceInputLabel}>Min</Text>
+                  <TextInput
+                    style={styles.priceInput}
+                    value={priceRange[0].toString()}
+                    onChangeText={(text) => {
+                      const val = parseInt(text) || 0;
+                      setPriceRange([val, priceRange[1]]);
+                    }}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <Text style={styles.priceRangeSeparator}>-</Text>
+                <View style={styles.priceInputGroup}>
+                  <Text style={styles.priceInputLabel}>Max</Text>
+                  <TextInput
+                    style={styles.priceInput}
+                    value={priceRange[1].toString()}
+                    onChangeText={(text) => {
+                      const val = parseInt(text) || 1000;
+                      setPriceRange([priceRange[0], val]);
+                    }}
+                    keyboardType="numeric"
+                  />
+                </View>
+              </View>
+              {/* Extra spacing at bottom */}
+              <View style={{ height: 40 }} />
+            </ScrollView>
+
+            {/* Modal Actions */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.resetButton]}
+                onPress={resetFilters}
+              >
+                <Text style={styles.resetButtonText}>Reset</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.applyButton]}
+                onPress={() => {
+                  setDistanceFilterEnabled(true);
+                  setShowFilterModal(false);
+                }}
+              >
+                <Text style={styles.applyButtonText}>Apply Filters</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -151,6 +637,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
   },
   searchSection: {
     flexDirection: 'row',
@@ -270,6 +765,13 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
+  placeholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
   discountBadge: {
     position: 'absolute',
     top: 8,
@@ -284,10 +786,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
   },
-  placeholderText: {
-    fontSize: 12,
-    color: '#999',
-    fontStyle: 'italic',
+  favoriteIconButton: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   productName: {
     fontSize: 16,
@@ -325,5 +833,256 @@ const styles = StyleSheet.create({
   productDistance: {
     fontSize: 12,
     color: '#999',
+  },
+  // Shop list styles
+  shopList: {
+    padding: 16,
+  },
+  shopCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+    gap: 12,
+  },
+  shopIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shopInfo: {
+    flex: 1,
+  },
+  shopCardName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 6,
+  },
+  shopDetails: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 8,
+  },
+  shopDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  shopDetailText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  categoryTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    alignItems: 'center',
+  },
+  categoryTag: {
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  categoryTagText: {
+    fontSize: 11,
+    color: '#4CAF50',
+    fontWeight: '600',
+  },
+  moreCategoriesText: {
+    fontSize: 11,
+    color: '#999',
+  },
+  // Filter styles
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#FF5252',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  filterModal: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '85%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#333',
+  },
+  filterContent: {
+    padding: 20,
+    paddingBottom: 60,
+  },
+  filterLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  categoryChipActive: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  categoryChipText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  categoryChipTextActive: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  sortOptions: {
+    gap: 8,
+  },
+  sortOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: '#f5f5f5',
+    gap: 12,
+  },
+  sortOptionActive: {
+    backgroundColor: '#E8F5E9',
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  sortOptionText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#666',
+  },
+  sortOptionTextActive: {
+    color: '#4CAF50',
+    fontWeight: '600',
+  },
+  sliderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  sliderButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sliderTrack: {
+    flex: 1,
+    height: 6,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  sliderFill: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+  },
+  priceInputs: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  priceInputGroup: {
+    flex: 1,
+  },
+  priceInputLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+  },
+  priceInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 14,
+  },
+  priceRangeSeparator: {
+    fontSize: 18,
+    color: '#999',
+    marginTop: 16,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    padding: 20,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  modalButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  resetButton: {
+    backgroundColor: '#f5f5f5',
+  },
+  applyButton: {
+    backgroundColor: '#4CAF50',
+  },
+  resetButtonText: {
+    color: '#666',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  applyButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });

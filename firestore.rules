@@ -1,0 +1,94 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user owns the conversation
+    function isConversationParticipant(conversationId) {
+      return isSignedIn() &&
+             get(/databases/$(database)/documents/conversations/$(conversationId)).data.userId == request.auth.uid;
+    }
+
+    // Products - Public read, authenticated write
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // Shops - Public read, authenticated write
+    match /shops/{shopId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // Reviews - Public read, authenticated users can write their own reviews
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() &&
+                      request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() &&
+                              resource.data.userId == request.auth.uid;
+    }
+
+    // Reservations - Users can only read/write their own reservations
+    match /reservations/{reservationId} {
+      allow read: if isSignedIn() &&
+                    resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() &&
+                      request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isSignedIn() &&
+                              resource.data.userId == request.auth.uid;
+    }
+
+    // Favorites - Users can only read/write their own favorites
+    match /favorites/{favoriteId} {
+      allow read: if isSignedIn() &&
+                    resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() &&
+                      request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() &&
+                      resource.data.userId == request.auth.uid;
+    }
+
+    // CONVERSATIONS - Critical security rules for messaging
+    match /conversations/{conversationId} {
+      // Only the customer who owns the conversation can read it
+      // The conversationId format is: {userId}_{shopId}
+      allow read: if isSignedIn() &&
+                    resource.data.userId == request.auth.uid;
+
+      // Only the customer can create a conversation for themselves
+      allow create: if isSignedIn() &&
+                      request.resource.data.userId == request.auth.uid &&
+                      conversationId.matches(request.auth.uid + '_.*');
+
+      // Only the customer can update their own conversation (for marking as read, etc.)
+      allow update: if isSignedIn() &&
+                      resource.data.userId == request.auth.uid;
+
+      // Only the customer can delete their own conversation
+      allow delete: if isSignedIn() &&
+                      resource.data.userId == request.auth.uid;
+
+      // MESSAGES subcollection - Only participants can read/write
+      match /messages/{messageId} {
+        // Only the customer who owns the parent conversation can read messages
+        allow read: if isConversationParticipant(conversationId);
+
+        // Only the customer can send messages in their own conversation
+        // (In future, shop owners would need additional rules)
+        allow create: if isSignedIn() &&
+                        isConversationParticipant(conversationId) &&
+                        request.resource.data.conversationId == conversationId;
+
+        // Messages cannot be updated or deleted (append-only for integrity)
+        allow update, delete: if false;
+      }
+    }
+  }
+}
