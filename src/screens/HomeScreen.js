@@ -279,7 +279,11 @@ export default function HomeScreen() {
 
     const getProductImage = (imageUrl) => {
       // If it's a Firebase Storage URL (HTTPS), return it as a URI
-      if (imageUrl && imageUrl.startsWith('https://')) {
+      if (imageUrl && (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'))) {
+        return { uri: imageUrl };
+      }
+      // If it starts with file:// (local URI), return it
+      if (imageUrl && imageUrl.startsWith('file://')) {
         return { uri: imageUrl };
       }
       // Otherwise, try to match with local assets
@@ -293,11 +297,19 @@ export default function HomeScreen() {
         >
             <Image
                 source={getProductImage(item.imageUrl)}
-                style={styles.carouselImage}
+                style={[
+                  styles.carouselImage,
+                  (item.stockQuantity === 0 || item.status === 'out of stock') && styles.outOfStockImage
+                ]}
             />
-            {item.discount > 0 && (
+            {item.discount > 0 && item.stockQuantity > 0 && (
                 <View style={styles.discountBadge}>
                     <Text style={styles.discountText}>-{item.discount}%</Text>
+                </View>
+            )}
+            {(item.stockQuantity === 0 || item.status === 'out of stock') && (
+                <View style={styles.outOfStockBadge}>
+                    <Text style={styles.outOfStockBadgeText}>OUT OF STOCK</Text>
                 </View>
             )}
             <View style={styles.carouselInfo}>
@@ -320,11 +332,19 @@ export default function HomeScreen() {
         >
             <Image
                 source={getProductImage(item.imageUrl)}
-                style={styles.productImage}
+                style={[
+                  styles.productImage,
+                  (item.stockQuantity === 0 || item.status === 'out of stock') && styles.outOfStockImage
+                ]}
             />
-            {item.discount > 0 && (
+            {item.discount > 0 && item.stockQuantity > 0 && (
                 <View style={styles.discountBadge}>
                     <Text style={styles.discountText}>-{item.discount}%</Text>
+                </View>
+            )}
+            {(item.stockQuantity === 0 || item.status === 'out of stock') && (
+                <View style={styles.outOfStockBadge}>
+                    <Text style={styles.outOfStockBadgeText}>OUT OF STOCK</Text>
                 </View>
             )}
             <View style={styles.productInfo}>
@@ -749,6 +769,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,
+  },
+  outOfStockImage: {
+    opacity: 0.5,
+  },
+  outOfStockBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  outOfStockBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
   },
   discountText: {
     color: '#fff',

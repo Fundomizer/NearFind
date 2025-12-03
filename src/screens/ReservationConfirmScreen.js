@@ -20,10 +20,20 @@ export default function ReservationConfirmScreen({ route, navigation }) {
   };
 
   const getProductImage = (imageUrl) => {
+    // If it's a Firebase Storage URL (HTTPS), return it as a URI
+    if (imageUrl && (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'))) {
+      return { uri: imageUrl };
+    }
+    // If it starts with file:// (local URI), return it
+    if (imageUrl && imageUrl.startsWith('file://')) {
+      return { uri: imageUrl };
+    }
+    // Try to match with local assets
     if (imageMap[imageUrl]) {
       return imageMap[imageUrl];
     }
-    return null;
+    // Return default fallback
+    return imageMap['honey.jpg'];
   };
 
   // Parse store hours (e.g., "8:00 AM - 5:00 PM")

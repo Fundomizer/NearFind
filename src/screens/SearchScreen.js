@@ -279,14 +279,19 @@ export default function SearchScreen() {
 
   const getProductImage = (imageUrl) => {
     // If it's a Firebase Storage URL (HTTPS), return it as a URI
-    if (imageUrl && imageUrl.startsWith('https://')) {
+    if (imageUrl && (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'))) {
+      return { uri: imageUrl };
+    }
+    // If it starts with file:// (local URI), return it
+    if (imageUrl && imageUrl.startsWith('file://')) {
       return { uri: imageUrl };
     }
     // Try to match with local assets
     if (imageMap[imageUrl]) {
       return imageMap[imageUrl];
     }
-    return null;
+    // Return default fallback
+    return imageMap['honey.jpg'];
   };
 
   if (loading) {
@@ -369,15 +374,26 @@ export default function SearchScreen() {
               >
                 <View style={styles.productImage}>
                   {getProductImage(product.imageUrl) ? (
-                    <Image source={getProductImage(product.imageUrl)} style={styles.image} />
+                    <Image
+                      source={getProductImage(product.imageUrl)}
+                      style={[
+                        styles.image,
+                        (product.stockQuantity === 0 || product.status === 'out of stock') && styles.outOfStockImage
+                      ]}
+                    />
                   ) : (
                     <View style={styles.placeholder}>
                       <Icon name="image-outline" size={40} color="#ccc" />
                     </View>
                   )}
-                  {product.discount && (
+                  {product.discount && product.stockQuantity > 0 && (
                     <View style={styles.discountBadge}>
                       <Text style={styles.discountText}>-{product.discount}%</Text>
+                    </View>
+                  )}
+                  {(product.stockQuantity === 0 || product.status === 'out of stock') && (
+                    <View style={styles.outOfStockBadge}>
+                      <Text style={styles.outOfStockBadgeText}>OUT OF STOCK</Text>
                     </View>
                   )}
                   <TouchableOpacity
@@ -780,6 +796,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+  },
+  outOfStockImage: {
+    opacity: 0.5,
+  },
+  outOfStockBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  outOfStockBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
   discountText: {
     fontSize: 12,

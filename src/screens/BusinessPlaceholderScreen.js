@@ -463,7 +463,21 @@ export default function BusinessPlaceholderScreen({ navigation }) {
                                     style={styles.productCard}
                                     onPress={() => handleProductPress(product)}
                                 >
-                                    <Image source={{ uri: product.image || product.imageUrl }} style={styles.productImage} />
+                                    <Image
+                                        source={{ uri: product.imageUrl || product.image }}
+                                        style={[
+                                          styles.productImage,
+                                          (product.stockQuantity === 0 || product.status === 'out of stock') && styles.outOfStockImage
+                                        ]}
+                                        defaultSource={require('../../assets/images/products/honey.jpg')}
+                                        onError={(e) => console.log('Image load error:', product.id, e.nativeEvent.error)}
+                                    />
+
+                                    {(product.stockQuantity === 0 || product.status === 'out of stock') && (
+                                        <View style={styles.outOfStockOverlay}>
+                                            <Text style={styles.outOfStockText}>OUT OF STOCK</Text>
+                                        </View>
+                                    )}
 
                                     <TouchableOpacity
                                         style={styles.deleteButton}
@@ -561,6 +575,9 @@ const styles = StyleSheet.create({
     uploadText: { marginTop: 8, fontSize: 14, color: '#999', fontWeight: '600' },
     productCard: { width: 160, backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#e0e0e0' },
     productImage: { width: '100%', height: 160, resizeMode: 'cover' },
+    outOfStockImage: { opacity: 0.5 },
+    outOfStockOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', justifyContent: 'center', alignItems: 'center' },
+    outOfStockText: { color: '#fff', fontSize: 14, fontWeight: '700', letterSpacing: 1 },
     deleteButton: { position: 'absolute', top: 8, right: 8, width: 34, height: 34, borderRadius: 17, backgroundColor: '#E53935', justifyContent: 'center', alignItems: 'center', zIndex: 10 },
     productInfo: { padding: 12 },
     productName: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 6 },
