@@ -17,7 +17,7 @@ export default function SearchScreen() {
   const [userLocation, setUserLocation] = useState(null);
   const [viewMode, setViewMode] = useState('products'); // 'products' or 'shops'
 
-  // Filter states
+  // Filter states (temporary values while editing in modal)
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [maxDistance, setMaxDistance] = useState(10); // km
@@ -25,6 +25,15 @@ export default function SearchScreen() {
   const [minDiscount, setMinDiscount] = useState(0); // percentage
   const [priceRange, setPriceRange] = useState([0, 1000]); // PHP
   const [sortBy, setSortBy] = useState('distance'); // distance, price, discount
+
+  // Applied filter states (actual values used for filtering)
+  const [appliedCategory, setAppliedCategory] = useState('All');
+  const [appliedMaxDistance, setAppliedMaxDistance] = useState(10);
+  const [appliedDistanceEnabled, setAppliedDistanceEnabled] = useState(false);
+  const [appliedMinDiscount, setAppliedMinDiscount] = useState(0);
+  const [appliedPriceRange, setAppliedPriceRange] = useState([0, 1000]);
+  const [appliedSortBy, setAppliedSortBy] = useState('distance');
+
   const [favoritedProducts, setFavoritedProducts] = useState(new Set());
 
   // Image mapping for local assets
@@ -152,7 +161,7 @@ export default function SearchScreen() {
   // Apply all filters
   useEffect(() => {
     applyFilters();
-  }, [searchText, products, selectedCategory, maxDistance, minDiscount, priceRange, sortBy]);
+  }, [searchText, products, appliedCategory, appliedMaxDistance, appliedMinDiscount, appliedPriceRange, appliedSortBy, appliedDistanceEnabled]);
 
   const applyFilters = () => {
     let filtered = [...products];
@@ -163,32 +172,33 @@ export default function SearchScreen() {
         product.name.toLowerCase().includes(searchText.toLowerCase()) ||
         product.shopName.toLowerCase().includes(searchText.toLowerCase()) ||
         product.category?.toLowerCase().includes(searchText.toLowerCase())
-      );
-    }
+      );}
 
     // Category filter
-    if (selectedCategory !== 'All') {
-      filtered = filtered.filter(product => product.category === selectedCategory);
+    if (appliedCategory !== 'All') {
+      filtered = filtered.filter(product => product.category === appliedCategory);
     }
 
     // Distance filter (only apply when user enabled it)
-    if (userLocation && distanceFilterEnabled) {
-      filtered = filtered.filter(product => product.distance <= maxDistance);
+    if (userLocation && appliedDistanceEnabled) {
+      filtered = filtered.filter(product => product.distance <= appliedMaxDistance);
     }
 
     // Discount filter
-    if (minDiscount > 0) {
-      filtered = filtered.filter(product => (product.discount || 0) >= minDiscount);
+    if (appliedMinDiscount > 0) {
+      filtered = filtered.filter(product => (product.discount || 0) >= appliedMinDiscount);
     }
 
     // Price range filter
-    filtered = filtered.filter(product =>
-      product.price >= priceRange[0] && product.price <= priceRange[1]
-    );
+    if (appliedPriceRange[0] !== 0 || appliedPriceRange[1] !== 1000) {
+      filtered = filtered.filter(product =>
+        product.price >= appliedPriceRange[0] && product.price <= appliedPriceRange[1]
+      );
+    }
 
     // Sort products
     filtered.sort((a, b) => {
-      switch (sortBy) {
+      switch (appliedSortBy) {
         case 'price-low':
           return a.price - b.price;
         case 'price-high':
@@ -205,19 +215,38 @@ export default function SearchScreen() {
   };
 
   const resetFilters = () => {
+    // Reset temporary states
     setSelectedCategory('All');
     setMaxDistance(10);
     setMinDiscount(0);
     setPriceRange([0, 1000]);
     setDistanceFilterEnabled(false);
+    setSortBy('distance');
+    // Reset applied states
+    setAppliedCategory('All');
+    setAppliedMaxDistance(10);
+    setAppliedMinDiscount(0);
+    setAppliedPriceRange([0, 1000]);
+    setAppliedDistanceEnabled(false);
+    setAppliedSortBy('distance');
+  };
+
+  const discardFilterChanges = () => {
+    // Restore temporary filter values to match currently applied values
+    setSelectedCategory(appliedCategory);
+    setMaxDistance(appliedMaxDistance);
+    setMinDiscount(appliedMinDiscount);
+    setPriceRange([...appliedPriceRange]);
+    setDistanceFilterEnabled(appliedDistanceEnabled);
+    setSortBy(appliedSortBy);
   };
 
   const getActiveFilterCount = () => {
     let count = 0;
-    if (selectedCategory !== 'All') count++;
-    if (maxDistance !== 10) count++;
-    if (minDiscount > 0) count++;
-    if (priceRange[0] !== 0 || priceRange[1] !== 1000) count++;
+    if (appliedCategory !== 'All') count++;
+    if (appliedDistanceEnabled && appliedMaxDistance !== 10) count++;
+    if (appliedMinDiscount > 0) count++;
+    if (appliedPriceRange[0] !== 0 || appliedPriceRange[1] !== 1000) count++;
     return count;
   };
 
@@ -495,13 +524,19 @@ export default function SearchScreen() {
         visible={showFilterModal}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowFilterModal(false)}
+        onRequestClose={() => {
+          discardFilterChanges();
+          setShowFilterModal(false);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.filterModal}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filters</Text>
-              <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+              <TouchableOpacity onPress={() => {
+                discardFilterChanges();
+                setShowFilterModal(false);
+              }}>
                 <Icon name="close" size={24} color="#333" />
               </TouchableOpacity>
             </View>
@@ -698,7 +733,13 @@ export default function SearchScreen() {
               <TouchableOpacity
                 style={[styles.modalButton, styles.applyButton]}
                 onPress={() => {
-                  setDistanceFilterEnabled(true);
+                  // Apply the temporary filter values to the applied states
+                  setAppliedCategory(selectedCategory);
+                  setAppliedMaxDistance(maxDistance);
+                  setAppliedMinDiscount(minDiscount);
+                  setAppliedPriceRange([...priceRange]);
+                  setAppliedSortBy(sortBy);
+                  setAppliedDistanceEnabled(true);
                   setShowFilterModal(false);
                 }}
               >
