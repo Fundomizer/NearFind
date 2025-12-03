@@ -5,10 +5,10 @@ import Icon from '@expo/vector-icons/Ionicons';
 
 // Import screens
 import HomeScreen from '../screens/HomeScreen';
-import SearchStackNavigator from './SearchStackNavigator';
+import MarketStackNavigator from './MarketStackNavigator';
 import ReservationsScreen from '../screens/ReservationsScreen';
 import ChatStackNavigator from './ChatStackNavigator';
-import MoreScreen from '../screens/MoreScreen';
+import AccountScreen from '../screens/AccountScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -50,7 +50,7 @@ export default function TabNavigator() {
       />
       <Tab.Screen
         name="Market"
-        component={SearchStackNavigator}
+        component={MarketStackNavigator}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Icon name="basket" size={size} color={color} />
@@ -77,7 +77,7 @@ export default function TabNavigator() {
       />
       <Tab.Screen
         name="Account"
-        component={MoreScreen}
+        component={AccountScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Icon name="person-circle" size={size} color={color} />

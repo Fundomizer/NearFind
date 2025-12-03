@@ -1,13 +1,13 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import SearchScreen from '../screens/SearchScreen';
+import MarketScreen from '../screens/MarketScreen';
 import ProductDetailsScreen from '../screens/ProductDetailsScreen';
 import ReservationConfirmScreen from '../screens/ReservationConfirmScreen';
 import ReservationsScreen from '../screens/ReservationsScreen';
 
 const Stack = createNativeStackNavigator();
 
-export default function SearchStackNavigator() {
+export default function MarketStackNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
@@ -18,12 +18,12 @@ export default function SearchStackNavigator() {
           e.preventDefault();
           navigation.reset({
             index: 0,
-            routes: [{ name: 'SearchHome' }],
+            routes: [{ name: 'MarketHome' }],
           });
         },
       })}
     >
-      <Stack.Screen name="SearchHome" component={SearchScreen} />
+      <Stack.Screen name="MarketHome" component={MarketScreen} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
       <Stack.Screen name="ReservationConfirm" component={ReservationConfirmScreen} />
       <Stack.Screen name="Reservations" component={ReservationsScreen} />

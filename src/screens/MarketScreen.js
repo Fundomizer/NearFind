@@ -210,6 +210,7 @@ export default function SearchScreen() {
     setMinDiscount(0);
     setPriceRange([0, 1000]);
     setDistanceFilterEnabled(false);
+    setSortBy('distance'); // Reset sorting to default
   };
 
   const getActiveFilterCount = () => {

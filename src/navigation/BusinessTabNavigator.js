@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Ionicons';
 
 // Import screens
-import BusinessPlaceholderScreen from '../screens/BusinessPlaceholderScreen';
+import BusinessDashboardScreen from '../screens/BusinessDashboardScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -37,7 +37,7 @@ export default function BusinessTabNavigator() {
     >
       <Tab.Screen
         name="Business"
-        component={BusinessPlaceholderScreen}
+        component={BusinessDashboardScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Icon name="storefront" size={size} color={color} />
