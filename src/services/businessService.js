@@ -460,11 +460,14 @@ export const subscribeToBusinessReservations = (callback) => {
         where('productId', 'in', productIds.slice(0, 10)) // Firestore limit
       );
 
-      const unsubscribe = onSnapshot(q, (snapshot) => {
+      const unsubscribe = onSnapshot(q, async (snapshot) => {
         const reservations = [];
         snapshot.forEach((doc) => {
           reservations.push({ id: doc.id, ...doc.data() });
         });
+
+        // Check and mark expired reservations
+        await checkAndMarkExpiredReservations(reservations);
 
         // Sort by createdAt descending
         reservations.sort((a, b) => {
@@ -482,5 +485,64 @@ export const subscribeToBusinessReservations = (callback) => {
   } catch (error) {
     console.error('Error subscribing to reservations:', error);
     return null;
+  }
+};
+
+/**
+ * Mark a reservation as completed (business owner)
+ */
+export const completeBusinessReservation = async (reservationId) => {
+  try {
+    const reservationRef = doc(db, 'reservations', reservationId);
+    await updateDoc(reservationRef, {
+      status: 'completed',
+      completedAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error completing reservation:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Check and mark expired reservations
+ */
+export const checkAndMarkExpiredReservations = async (reservations) => {
+  try {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const expiredReservations = reservations.filter(reservation => {
+      // Only check pending or confirmed reservations
+      if (reservation.status !== 'pending' && reservation.status !== 'confirmed') {
+        return false;
+      }
+
+      // Get the reservation creation date
+      const createdDate = reservation.createdAt?.toDate ? reservation.createdAt.toDate() : new Date(reservation.createdAt);
+      const createdDayStart = new Date(createdDate.getFullYear(), createdDate.getMonth(), createdDate.getDate());
+
+      // If created before today, it's expired
+      return createdDayStart < startOfToday;
+    });
+
+    // Update expired reservations
+    const updatePromises = expiredReservations.map(reservation => {
+      const reservationRef = doc(db, 'reservations', reservation.id);
+      return updateDoc(reservationRef, {
+        status: 'expired',
+        updatedAt: Timestamp.now(),
+      });
+    });
+
+    await Promise.all(updatePromises);
+
+    return { success: true, expiredCount: expiredReservations.length };
+  } catch (error) {
+    console.error('Error checking expired reservations:', error);
+    return { success: false, error: error.message };
   }
 };

@@ -531,6 +531,10 @@ export default function BusinessPlaceholderScreen({ navigation }) {
                     <Icon name={activeTab === 'home' ? 'home' : 'home-outline'} size={28} color={activeTab === 'home' ? '#4CAF50' : '#999'} />
                 </TouchableOpacity>
 
+                <TouchableOpacity style={styles.navButton} onPress={() => { setActiveTab('reservations'); navigation.navigate('BusinessReservations'); }}>
+                    <Icon name={activeTab === 'reservations' ? 'list' : 'list-outline'} size={28} color={activeTab === 'reservations' ? '#4CAF50' : '#999'} />
+                </TouchableOpacity>
+
                 <TouchableOpacity style={styles.navButton} onPress={handleAddButtonPress}>
                     <View style={styles.addButton}>
                         <Icon name="add" size={32} color="#fff" />

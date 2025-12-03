@@ -42,9 +42,12 @@ export default function BusinessDashboardScreen({ navigation }) {
               <Text style={styles.actionText}>My Products</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionCard}>
+            <TouchableOpacity
+              style={styles.actionCard}
+              onPress={() => navigation.navigate('BusinessReservations')}
+            >
               <Icon name="list" size={32} color="#4CAF50" />
-              <Text style={styles.actionText}>Orders</Text>
+              <Text style={styles.actionText}>Reservations</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionCard}>

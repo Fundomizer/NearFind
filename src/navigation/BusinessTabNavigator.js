@@ -8,6 +8,7 @@ import Icon from '@expo/vector-icons/Ionicons';
 import BusinessPlaceholderScreen from '../screens/BusinessPlaceholderScreen';
 import BusinessChatScreen from '../screens/BusinessChatScreen';
 import BusinessIndividualChatScreen from '../screens/BusinessIndividualChatScreen';
+import BusinessReservationsScreen from '../screens/BusinessReservationsScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -17,6 +18,7 @@ function BusinessStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="BusinessHome" component={BusinessPlaceholderScreen} />
+      <Stack.Screen name="BusinessReservations" component={BusinessReservationsScreen} />
       <Stack.Screen name="BusinessChatList" component={BusinessChatScreen} />
       <Stack.Screen name="BusinessIndividualChat" component={BusinessIndividualChatScreen} />
     </Stack.Navigator>

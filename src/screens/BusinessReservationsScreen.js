@@ -1,25 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Linking } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
-import { subscribeToReservations, cancelReservation } from '../services/reservationService';
+import { subscribeToBusinessReservations, completeBusinessReservation } from '../services/businessService';
 
-export default function ReservationsScreen({ navigation, route }) {
+export default function BusinessReservationsScreen({ navigation }) {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'history'
 
-  // Handle navigation parameter to set initial tab
-  useEffect(() => {
-    if (route?.params?.initialTab) {
-      setActiveTab(route.params.initialTab);
-      // Clear the param after using it
-      navigation.setParams({ initialTab: undefined });
-    }
-  }, [route?.params?.initialTab]);
-
   useEffect(() => {
     // Subscribe to real-time reservation updates
-    const unsubscribe = subscribeToReservations((updatedReservations) => {
+    const unsubscribe = subscribeToBusinessReservations((updatedReservations) => {
       setReservations(updatedReservations);
       setLoading(false);
     });
@@ -33,25 +24,24 @@ export default function ReservationsScreen({ navigation, route }) {
     };
   }, []);
 
-  const handleCancelReservation = (reservationId, productName) => {
+  const handleCompleteReservation = (reservationId, productName) => {
     Alert.alert(
-      'Cancel Reservation',
-      `Are you sure you want to cancel the reservation for ${productName}?`,
+      'Mark as Completed',
+      `Mark ${productName} as completed? This confirms the customer has picked up the order.`,
       [
         {
-          text: 'No',
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Yes, Cancel',
-          style: 'destructive',
+          text: 'Mark Complete',
+          style: 'default',
           onPress: async () => {
-            const result = await cancelReservation(reservationId);
+            const result = await completeBusinessReservation(reservationId);
             if (result.success) {
-              Alert.alert('Success', 'Reservation cancelled successfully');
-              // No need to manually refresh - real-time listener will update automatically
+              Alert.alert('Success', 'Reservation marked as completed');
             } else {
-              Alert.alert('Error', result.error || 'Failed to cancel reservation');
+              Alert.alert('Error', result.error || 'Failed to complete reservation');
             }
           },
         },
@@ -109,16 +99,15 @@ export default function ReservationsScreen({ navigation, route }) {
     if (!timestamp) return 'N/A';
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     const now = new Date();
-    const diffInMs = now - date;
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
 
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-    return formatDate(timestamp);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
   };
 
   const activeReservations = reservations.filter(
@@ -133,18 +122,9 @@ export default function ReservationsScreen({ navigation, route }) {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Icon name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Reservations</Text>
-          <View style={styles.placeholder} />
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>Loading reservations...</Text>
-        </View>
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+        <Text style={styles.loadingText}>Loading reservations...</Text>
       </View>
     );
   }
@@ -156,12 +136,12 @@ export default function ReservationsScreen({ navigation, route }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Reservations</Text>
+        <Text style={styles.headerTitle}>Reservations</Text>
         <View style={styles.placeholder} />
       </View>
 
       {/* Tabs */}
-      <View style={styles.tabsContainer}>
+      <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'active' && styles.activeTab]}
           onPress={() => setActiveTab('active')}
@@ -180,29 +160,13 @@ export default function ReservationsScreen({ navigation, route }) {
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
-      <ScrollView style={styles.content}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {displayReservations.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Icon
-              name={activeTab === 'active' ? 'calendar-outline' : 'time-outline'}
-              size={80}
-              color="#ccc"
-            />
-            <Text style={styles.emptyTitle}>
-              {activeTab === 'active' ? 'No Active Reservations' : 'No Reservation History'}
-            </Text>
+            <Icon name="calendar-outline" size={64} color="#ccc" />
             <Text style={styles.emptyText}>
-              {activeTab === 'active'
-                ? 'Browse products and reserve items to see them here'
-                : 'Your completed and cancelled reservations will appear here'}
+              {activeTab === 'active' ? 'No active reservations' : 'No reservation history'}
             </Text>
-            <TouchableOpacity
-              style={styles.browseButton}
-              onPress={() => navigation.navigate('Market')}
-            >
-              <Text style={styles.browseButtonText}>Browse Products</Text>
-            </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.reservationsList}>
@@ -224,7 +188,7 @@ export default function ReservationsScreen({ navigation, route }) {
 
                 {/* Product Info */}
                 <View style={styles.reservationHeader}>
-                  <Icon name="calendar" size={24} color="#4CAF50" />
+                  <Icon name="cube" size={24} color="#4CAF50" />
                   <View style={styles.reservationHeaderInfo}>
                     <View style={styles.productNameRow}>
                       <Text style={styles.productName}>{reservation.productName}</Text>
@@ -235,7 +199,7 @@ export default function ReservationsScreen({ navigation, route }) {
                         </View>
                       )}
                     </View>
-                    <Text style={styles.shopName}>{reservation.shopName}</Text>
+                    <Text style={styles.customerEmail}>{reservation.userEmail}</Text>
                   </View>
                 </View>
 
@@ -269,28 +233,11 @@ export default function ReservationsScreen({ navigation, route }) {
                 {activeTab === 'active' && (
                   <View style={styles.actionsSection}>
                     <TouchableOpacity
-                      style={styles.viewShopButton}
-                      onPress={() => {
-                        // Open Google Maps with shop location
-                        if (reservation.shopLatitude && reservation.shopLongitude) {
-                          const url = `https://www.google.com/maps/search/?api=1&query=${reservation.shopLatitude},${reservation.shopLongitude}`;
-                          Linking.openURL(url).catch(err =>
-                            Alert.alert('Error', 'Unable to open maps')
-                          );
-                        } else {
-                          Alert.alert('Location Unavailable', 'Shop location coordinates are not available.');
-                        }
-                      }}
+                      style={styles.completeButton}
+                      onPress={() => handleCompleteReservation(reservation.id, reservation.productName)}
                     >
-                      <Icon name="location" size={18} color="#4CAF50" />
-                      <Text style={styles.viewShopButtonText}>View Shop</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.cancelButton}
-                      onPress={() => handleCancelReservation(reservation.id, reservation.productName)}
-                    >
-                      <Icon name="close-circle-outline" size={18} color="#FF5252" />
-                      <Text style={styles.cancelButtonText}>Cancel</Text>
+                      <Icon name="checkmark-done" size={18} color="#fff" />
+                      <Text style={styles.completeButtonText}>Mark as Done</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -311,6 +258,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#666',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -323,45 +279,25 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 8,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#333',
-  },
-  refreshButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   placeholder: {
     width: 40,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 12,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  tabsContainer: {
+  tabs: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 16,
     alignItems: 'center',
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
@@ -370,7 +306,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#4CAF50',
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#999',
   },
@@ -381,45 +317,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 80,
-    paddingHorizontal: 40,
-  },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
-    marginTop: 20,
-    marginBottom: 8,
   },
   emptyText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  browseButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-  },
-  browseButtonText: {
-    color: '#fff',
+    marginTop: 16,
     fontSize: 16,
-    fontWeight: '600',
+    color: '#999',
   },
   reservationsList: {
     padding: 16,
-    gap: 12,
   },
   reservationCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -435,10 +349,15 @@ const styles = StyleSheet.create({
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 12,
+    gap: 6,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#fff',
   },
   timeAgoContainer: {
     flexDirection: 'row',
@@ -448,18 +367,12 @@ const styles = StyleSheet.create({
   timeAgoText: {
     fontSize: 12,
     color: '#999',
-    fontWeight: '500',
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#fff',
   },
   reservationHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    marginBottom: 12,
     gap: 12,
-    marginBottom: 16,
   },
   reservationHeaderInfo: {
     flex: 1,
@@ -489,17 +402,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  shopName: {
+  customerEmail: {
     fontSize: 14,
     color: '#666',
   },
   detailsSection: {
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 8,
     gap: 8,
-    marginBottom: 16,
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
+    marginBottom: 12,
   },
   detailRow: {
     flexDirection: 'row',
@@ -520,34 +432,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
-  viewShopButton: {
+  completeButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#E8F5E9',
-    paddingVertical: 10,
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
     borderRadius: 8,
+    gap: 8,
   },
-  viewShopButtonText: {
+  completeButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4CAF50',
-  },
-  cancelButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: '#FFEBEE',
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  cancelButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FF5252',
+    color: '#fff',
   },
 });
