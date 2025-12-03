@@ -73,6 +73,9 @@ export default function SignupScreen() {
                 contentContainerStyle={{ flexGrow: 1 }}
             >
                 <View style={styles.logoContainer}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Icon name="arrow-back" size={28} color="#fff" />
+                    </TouchableOpacity>
                     <Image source={require("../../assets/nearfind-logo.png")} style={styles.logo}></Image>
                     <Text style={[textStyle.h1, { color: '#ffffffff' }]}>NearFind</Text>
                 </View>
@@ -139,7 +142,7 @@ export default function SignupScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
-                    <Text style={textStyle.linkText}>Terms and conditons</Text>
+                    <Text style={textStyle.linkText}>Terms and conditions</Text>
                     {loading ? (
                         <ActivityIndicator size="large" color="#4CAF50" />
                     ) : (
@@ -168,7 +171,18 @@ const styles = StyleSheet.create({
         flex: 7,
         flexDirection: 'row',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        position: 'relative',
+    },
+    backButton: {
+        position: 'absolute',
+        left: 20,
+        top: 20,
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
     },
     logo: {
         aspectRatio: 1,
