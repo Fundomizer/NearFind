@@ -305,6 +305,17 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Logo Header */}
+      <View style={styles.header}>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../../assets/nearfind-logo.png')}
+            style={styles.logoSmall}
+          />
+          <Text style={styles.appName}>NearFind</Text>
+        </View>
+      </View>
+
       {/* Search Bar Section */}
       <View style={styles.searchSection}>
         <View style={styles.searchBar}>
@@ -715,11 +726,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
+  header: {
+    backgroundColor: '#fff',
+    paddingTop: 50,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoSmall: {
+    width: 32,
+    height: 32,
+    resizeMode: 'contain',
+  },
+  appName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4CAF50',
+  },
   searchSection: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    paddingTop: 50,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
