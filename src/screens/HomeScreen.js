@@ -15,7 +15,6 @@ export default function HomeScreen() {
     const navigation = useNavigation();
     const [currentLocation, setCurrentLocation] = useState('Baguio, Philippines');
     const [showLocationModal, setShowLocationModal] = useState(false);
-    const [tempLocation, setTempLocation] = useState('');
     const [isLoadingLocation, setIsLoadingLocation] = useState(false);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -253,18 +252,7 @@ export default function HomeScreen() {
     };
 
     const handleChangeLocation = () => {
-        setTempLocation(currentLocation);
         setShowLocationModal(true);
-    };
-
-    const handleSaveLocation = () => {
-        if (tempLocation.trim()) {
-            setCurrentLocation(tempLocation);
-            setShowLocationModal(false);
-            Alert.alert('Location Updated', `Your location has been set to ${tempLocation}`);
-        } else {
-            Alert.alert('Error', 'Please enter a valid location');
-        }
     };
 
     const handleUseCurrentLocation = async () => {
@@ -274,10 +262,11 @@ export default function HomeScreen() {
 
             await getCurrentLocation();
 
-            Alert.alert('Success', 'Location updated to your current location');
+            Alert.alert('Success', 'Location automatically detected and updated');
         } catch (error) {
             console.log('Error getting location:', error);
             setIsLoadingLocation(false);
+            Alert.alert('Error', 'Could not detect location. Please check your GPS and permissions.');
         }
     };
 
@@ -491,44 +480,34 @@ export default function HomeScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Change Location</Text>
+              <Text style={styles.modalTitle}>Update Location</Text>
               <TouchableOpacity onPress={() => setShowLocationModal(false)}>
                 <Icon name="close" size={24} color="#333" />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.modalLabel}>Enter your city</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="e.g., Manila, Philippines"
-              value={tempLocation}
-              onChangeText={setTempLocation}
-              autoFocus={true}
-            />
+            <View style={styles.locationInfoContainer}>
+              <Icon name="location" size={48} color="#4CAF50" />
+              <Text style={styles.locationInfoTitle}>Automatic Location Detection</Text>
+              <Text style={styles.locationInfoText}>
+                Your location will be automatically detected using GPS and Google Maps.
+              </Text>
+            </View>
 
             <TouchableOpacity
               style={styles.useLocationButton}
               onPress={handleUseCurrentLocation}
             >
-              <Icon name="location" size={20} color="#4CAF50" />
-              <Text style={styles.useLocationText}>Use My Current Location</Text>
+              <Icon name="navigate" size={24} color="#fff" />
+              <Text style={styles.useLocationButtonText}>Detect My Location</Text>
             </TouchableOpacity>
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowLocationModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={handleSaveLocation}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.cancelButtonFull}
+              onPress={() => setShowLocationModal(false)}
+            >
+              <Text style={styles.cancelButtonFullText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -880,28 +859,49 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 8,
   },
-  modalInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    marginBottom: 16,
+  locationInfoContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    marginBottom: 20,
+  },
+  locationInfoTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  locationInfoText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 20,
   },
   useLocationButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#4CAF50',
+    padding: 16,
+    backgroundColor: '#4CAF50',
     borderRadius: 12,
-    marginBottom: 20,
+    marginBottom: 12,
     gap: 8,
   },
-  useLocationText: {
-    color: '#4CAF50',
-    fontSize: 14,
+  useLocationButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelButtonFull: {
+    padding: 16,
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+  },
+  cancelButtonFullText: {
+    color: '#666',
+    fontSize: 16,
     fontWeight: '600',
   },
   modalButtons: {

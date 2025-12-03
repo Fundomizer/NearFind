@@ -84,7 +84,7 @@ export default function BusinessPlaceholderScreen({ navigation }) {
                 return;
             }
 
-            Alert.alert('Getting Location', 'Fetching your current location...');
+            Alert.alert('Getting Location', 'Detecting your current location via GPS...');
 
             const location = await Location.getCurrentPositionAsync({
                 accuracy: Location.Accuracy.High,
@@ -92,31 +92,65 @@ export default function BusinessPlaceholderScreen({ navigation }) {
 
             const { latitude, longitude } = location.coords;
 
+            // Get address from coordinates using reverse geocoding
+            let addressString = '';
+            try {
+                const geocodeResults = await Location.reverseGeocodeAsync({
+                    latitude,
+                    longitude,
+                });
+
+                if (geocodeResults && geocodeResults.length > 0) {
+                    const geocode = geocodeResults[0];
+                    const parts = [];
+
+                    // Build human-readable address
+                    if (geocode.street) parts.push(geocode.street);
+                    if (geocode.streetNumber) parts.unshift(geocode.streetNumber);
+                    if (geocode.district) parts.push(geocode.district);
+                    if (geocode.city) parts.push(geocode.city);
+                    if (geocode.region) parts.push(geocode.region);
+                    if (geocode.country) parts.push(geocode.country);
+
+                    addressString = parts.join(', ');
+                }
+            } catch (geocodeError) {
+                console.log('Geocoding error:', geocodeError);
+                addressString = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+            }
+
             setPinLocation({ latitude, longitude });
 
             // Save location to business profile
             await updateBusinessProfile({ latitude, longitude });
 
-            const scheme = Platform.select({
-                ios: 'maps:',
-                android: 'geo:',
-            });
-            const url = Platform.select({
-                ios: `${scheme}?q=${latitude},${longitude}&ll=${latitude},${longitude}`,
-                android: `${scheme}${latitude},${longitude}?q=${latitude},${longitude}`,
-            });
+            Alert.alert(
+                'Location Detected',
+                `Your business location has been automatically set to:\n\n${addressString || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`}\n\nWould you like to view it on Google Maps?`,
+                [
+                    { text: 'No, Thanks', style: 'cancel' },
+                    {
+                        text: 'Open Maps',
+                        onPress: async () => {
+                            const scheme = Platform.select({
+                                ios: 'maps:',
+                                android: 'geo:',
+                            });
+                            const url = Platform.select({
+                                ios: `${scheme}?q=${latitude},${longitude}&ll=${latitude},${longitude}`,
+                                android: `${scheme}${latitude},${longitude}?q=${latitude},${longitude}`,
+                            });
 
-            const supported = await Linking.canOpenURL(url);
-
-            if (supported) {
-                await Linking.openURL(url);
-                Alert.alert(
-                    'Location Set',
-                    `Your business location has been set to:\nLatitude: ${latitude.toFixed(6)}\nLongitude: ${longitude.toFixed(6)}\n\nYou can view it on Google Maps.`
-                );
-            } else {
-                Alert.alert('Error', 'Cannot open Google Maps');
-            }
+                            const supported = await Linking.canOpenURL(url);
+                            if (supported) {
+                                await Linking.openURL(url);
+                            } else {
+                                Alert.alert('Error', 'Cannot open Google Maps');
+                            }
+                        }
+                    }
+                ]
+            );
         } catch (error) {
             console.error('Error getting location:', error);
             Alert.alert('Error', 'Failed to get your location. Please try again.');
