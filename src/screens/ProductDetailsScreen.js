@@ -171,6 +171,14 @@ export default function ProductDetailsScreen({ route, navigation }) {
     setFavoriteLoading(false);
   };
 
+  if (!product) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Product not found</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -234,7 +242,7 @@ export default function ProductDetailsScreen({ route, navigation }) {
           <View style={styles.distanceRow}>
             <Icon name="location-outline" size={16} color="#666" />
             <Text style={styles.distanceText}>
-              {product.distance > 0 ? `${product.distance} km away` : 'Location unavailable'}
+              {(product.distance && product.distance > 0) ? `${product.distance.toFixed(1)} km away` : 'Location unavailable'}
             </Text>
           </View>
 
@@ -309,7 +317,7 @@ export default function ProductDetailsScreen({ route, navigation }) {
             <View style={styles.shopDetail}>
               <Icon name="location" size={16} color="#666" />
               <Text style={styles.shopDetailText}>
-                {product.distance > 0 ? `${product.distance} km from you` : 'Distance unavailable'}
+                {(product.distance && product.distance > 0) ? `${product.distance.toFixed(1)} km from you` : 'Distance unavailable'}
               </Text>
             </View>
 

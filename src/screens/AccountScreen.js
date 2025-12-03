@@ -5,7 +5,7 @@ import { logOut } from '../services/authService';
 import { auth } from '../config/firebase';
 import { useNavigation } from '@react-navigation/native';
 
-export default function MoreScreen() {
+export default function AccountScreen() {
   const navigation = useNavigation();
   const [userEmail, setUserEmail] = useState('');
   const [userName, setUserName] = useState('');

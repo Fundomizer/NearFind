@@ -8,7 +8,7 @@ import { addToFavorites, removeFromFavorites, subscribeToFavorites } from '../se
 import { db } from '../config/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 
-export default function SearchScreen() {
+export default function MarketScreen() {
   const navigation = useNavigation();
   const [searchText, setSearchText] = useState('');
   const [products, setProducts] = useState([]);
@@ -474,7 +474,7 @@ export default function SearchScreen() {
                 <View style={styles.distanceContainer}>
                   <Icon name="location-outline" size={12} color="#999" />
                   <Text style={styles.productDistance}>
-                    {product.distance > 0 ? `${product.distance} km` : 'Location unavailable'}
+                    {(product.distance && product.distance > 0) ? `${product.distance.toFixed(1)} km` : 'Location unavailable'}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -501,7 +501,7 @@ export default function SearchScreen() {
                     <View style={styles.shopDetailItem}>
                       <Icon name="location-outline" size={14} color="#666" />
                       <Text style={styles.shopDetailText}>
-                        {shop.distance > 0 ? `${shop.distance} km` : 'Location unavailable'}
+                        {(shop.distance && shop.distance > 0) ? `${shop.distance.toFixed(1)} km` : 'Location unavailable'}
                       </Text>
                     </View>
                   </View>

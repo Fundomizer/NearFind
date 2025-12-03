@@ -15,11 +15,18 @@ export default function SignupScreen() {
     const [conpassword, setConPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [userRole, setUserRole] = useState('customer'); // 'customer' or 'business'
+    const [businessName, setBusinessName] = useState(''); // Business name field
 
     const handleSignup = async () => {
         // Validation
         if (!email || !password || !conpassword) {
             Alert.alert("Error", "Please fill in all fields");
+            return;
+        }
+
+        // Validate business name if user is signing up as business
+        if (userRole === 'business' && !businessName.trim()) {
+            Alert.alert("Error", "Please enter your business name");
             return;
         }
 
@@ -41,9 +48,9 @@ export default function SignupScreen() {
             return;
         }
 
-        // Firebase signup with role for both customer and business
+        // Firebase signup with role and business name (if applicable)
         setLoading(true);
-        const result = await signUp(email, password, userRole);
+        const result = await signUp(email, password, userRole, businessName);
         setLoading(false);
 
         if (result.success) {
@@ -142,6 +149,18 @@ export default function SignupScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
+                    {userRole === 'business' && (
+                        <View>
+                            <Text style={textStyle.normalText}>Business Name</Text>
+                            <TextInput
+                                placeholder="Enter your business name"
+                                style={[styles.textInput, textStyle.normalText]}
+                                onChangeText={setBusinessName}
+                                value={businessName}
+                                autoCapitalize="words"
+                            />
+                        </View>
+                    )}
                     <Text style={textStyle.linkText}>Terms and conditions</Text>
                     {loading ? (
                         <ActivityIndicator size="large" color="#4CAF50" />

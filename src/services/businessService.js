@@ -31,13 +31,46 @@ export const getBusinessProfile = async () => {
     const businessDoc = await getDoc(businessRef);
 
     if (businessDoc.exists()) {
-      return { success: true, data: { id: businessDoc.id, ...businessDoc.data() } };
+      const businessData = businessDoc.data();
+
+      // If companyName is still "My Business", try to update it from user document
+      if (businessData.companyName === 'My Business') {
+        try {
+          const userRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userRef);
+          if (userDoc.exists() && userDoc.data().businessName) {
+            // Update the business profile with the registered business name
+            await updateDoc(businessRef, {
+              companyName: userDoc.data().businessName,
+              updatedAt: Timestamp.now(),
+            });
+            businessData.companyName = userDoc.data().businessName;
+            console.log('Updated business name from user profile:', userDoc.data().businessName);
+          }
+        } catch (error) {
+          console.log('Could not fetch/update user business name:', error);
+        }
+      }
+
+      return { success: true, data: { id: businessDoc.id, ...businessData } };
     } else {
+      // Get business name from user profile if available
+      let businessName = 'My Business';
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists() && userDoc.data().businessName) {
+          businessName = userDoc.data().businessName;
+        }
+      } catch (error) {
+        console.log('Could not fetch user profile, using default business name');
+      }
+
       // Create default business profile using setDoc (not updateDoc)
       const defaultProfile = {
         userId: user.uid,
         userEmail: user.email,
-        companyName: 'My Business',
+        companyName: businessName,
         logo: null,
         location: null,
         latitude: null,
