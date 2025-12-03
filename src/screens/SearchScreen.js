@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert, Modal } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert, Modal, PanResponder } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
 import { getProducts } from '../services/firestoreService';
@@ -566,7 +566,29 @@ export default function SearchScreen() {
                 >
                   <Icon name="remove" size={20} color="#4CAF50" />
                 </TouchableOpacity>
-                <View style={styles.sliderTrack}>
+                <View
+                  style={styles.sliderTrack}
+                  {...PanResponder.create({
+                    onStartShouldSetPanResponder: () => true,
+                    onMoveShouldSetPanResponder: () => true,
+                    onPanResponderGrant: (e) => {
+                      e.target.measure((x, y, width, height, pageX, pageY) => {
+                        const touchX = e.nativeEvent.pageX - pageX;
+                        const percentage = Math.max(0, Math.min(1, touchX / width));
+                        const newValue = Math.round(percentage * 20);
+                        setMaxDistance(Math.max(1, Math.min(20, newValue || 1)));
+                      });
+                    },
+                    onPanResponderMove: (e) => {
+                      e.target.measure((x, y, width, height, pageX, pageY) => {
+                        const touchX = e.nativeEvent.pageX - pageX;
+                        const percentage = Math.max(0, Math.min(1, touchX / width));
+                        const newValue = Math.round(percentage * 20);
+                        setMaxDistance(Math.max(1, Math.min(20, newValue || 1)));
+                      });
+                    },
+                  }).panHandlers}
+                >
                   <View style={[styles.sliderFill, { width: `${(maxDistance / 20) * 100}%` }]} />
                 </View>
                 <TouchableOpacity
@@ -586,7 +608,29 @@ export default function SearchScreen() {
                 >
                   <Icon name="remove" size={20} color="#4CAF50" />
                 </TouchableOpacity>
-                <View style={styles.sliderTrack}>
+                <View
+                  style={styles.sliderTrack}
+                  {...PanResponder.create({
+                    onStartShouldSetPanResponder: () => true,
+                    onMoveShouldSetPanResponder: () => true,
+                    onPanResponderGrant: (e) => {
+                      e.target.measure((x, y, width, height, pageX, pageY) => {
+                        const touchX = e.nativeEvent.pageX - pageX;
+                        const percentage = Math.max(0, Math.min(1, touchX / width));
+                        const newValue = Math.round(percentage * 10) * 5;
+                        setMinDiscount(Math.max(0, Math.min(50, newValue)));
+                      });
+                    },
+                    onPanResponderMove: (e) => {
+                      e.target.measure((x, y, width, height, pageX, pageY) => {
+                        const touchX = e.nativeEvent.pageX - pageX;
+                        const percentage = Math.max(0, Math.min(1, touchX / width));
+                        const newValue = Math.round(percentage * 10) * 5;
+                        setMinDiscount(Math.max(0, Math.min(50, newValue)));
+                      });
+                    },
+                  }).panHandlers}
+                >
                   <View style={[styles.sliderFill, { width: `${(minDiscount / 50) * 100}%` }]} />
                 </View>
                 <TouchableOpacity
