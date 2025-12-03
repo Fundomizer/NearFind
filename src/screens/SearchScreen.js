@@ -316,6 +316,14 @@ export default function SearchScreen() {
             value={searchText}
             onChangeText={setSearchText}
           />
+          {searchText.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchText('')}
+              style={styles.clearButton}
+            >
+              <Icon name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          )}
         </View>
 
         <TouchableOpacity
@@ -689,6 +697,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#333',
+  },
+  clearButton: {
+    padding: 4,
+    marginLeft: 4,
   },
   sortButton: {
     width: 48,
