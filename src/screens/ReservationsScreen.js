@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Linking } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
 import { subscribeToReservations, cancelReservation } from '../services/reservationService';
 
@@ -259,8 +259,15 @@ export default function ReservationsScreen({ navigation, route }) {
                     <TouchableOpacity
                       style={styles.viewShopButton}
                       onPress={() => {
-                        // Navigate to map or show shop details
-                        Alert.alert('Shop Location', `${reservation.shopName} is located nearby. Open in maps?`);
+                        // Open Google Maps with shop location
+                        if (reservation.shopLatitude && reservation.shopLongitude) {
+                          const url = `https://www.google.com/maps/search/?api=1&query=${reservation.shopLatitude},${reservation.shopLongitude}`;
+                          Linking.openURL(url).catch(err =>
+                            Alert.alert('Error', 'Unable to open maps')
+                          );
+                        } else {
+                          Alert.alert('Location Unavailable', 'Shop location coordinates are not available.');
+                        }
                       }}
                     >
                       <Icon name="location" size={18} color="#4CAF50" />
