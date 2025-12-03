@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert, Modal } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert, Modal, PanResponder } from 'react-native';
 import Icon from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
 import { getProducts } from '../services/firestoreService';
@@ -17,7 +17,7 @@ export default function SearchScreen() {
   const [userLocation, setUserLocation] = useState(null);
   const [viewMode, setViewMode] = useState('products'); // 'products' or 'shops'
 
-  // Filter states
+  // Filter states (temporary values while editing in modal)
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [maxDistance, setMaxDistance] = useState(10); // km
@@ -25,6 +25,15 @@ export default function SearchScreen() {
   const [minDiscount, setMinDiscount] = useState(0); // percentage
   const [priceRange, setPriceRange] = useState([0, 1000]); // PHP
   const [sortBy, setSortBy] = useState('distance'); // distance, price, discount
+
+  // Applied filter states (actual values used for filtering)
+  const [appliedCategory, setAppliedCategory] = useState('All');
+  const [appliedMaxDistance, setAppliedMaxDistance] = useState(10);
+  const [appliedDistanceEnabled, setAppliedDistanceEnabled] = useState(false);
+  const [appliedMinDiscount, setAppliedMinDiscount] = useState(0);
+  const [appliedPriceRange, setAppliedPriceRange] = useState([0, 1000]);
+  const [appliedSortBy, setAppliedSortBy] = useState('distance');
+
   const [favoritedProducts, setFavoritedProducts] = useState(new Set());
 
   // Image mapping for local assets
@@ -152,7 +161,7 @@ export default function SearchScreen() {
   // Apply all filters
   useEffect(() => {
     applyFilters();
-  }, [searchText, products, selectedCategory, maxDistance, minDiscount, priceRange, sortBy]);
+  }, [searchText, products, appliedCategory, appliedMaxDistance, appliedMinDiscount, appliedPriceRange, appliedSortBy, appliedDistanceEnabled]);
 
   const applyFilters = () => {
     let filtered = [...products];
@@ -163,32 +172,33 @@ export default function SearchScreen() {
         product.name.toLowerCase().includes(searchText.toLowerCase()) ||
         product.shopName.toLowerCase().includes(searchText.toLowerCase()) ||
         product.category?.toLowerCase().includes(searchText.toLowerCase())
-      );
-    }
+      );}
 
     // Category filter
-    if (selectedCategory !== 'All') {
-      filtered = filtered.filter(product => product.category === selectedCategory);
+    if (appliedCategory !== 'All') {
+      filtered = filtered.filter(product => product.category === appliedCategory);
     }
 
     // Distance filter (only apply when user enabled it)
-    if (userLocation && distanceFilterEnabled) {
-      filtered = filtered.filter(product => product.distance <= maxDistance);
+    if (userLocation && appliedDistanceEnabled) {
+      filtered = filtered.filter(product => product.distance <= appliedMaxDistance);
     }
 
     // Discount filter
-    if (minDiscount > 0) {
-      filtered = filtered.filter(product => (product.discount || 0) >= minDiscount);
+    if (appliedMinDiscount > 0) {
+      filtered = filtered.filter(product => (product.discount || 0) >= appliedMinDiscount);
     }
 
     // Price range filter
-    filtered = filtered.filter(product =>
-      product.price >= priceRange[0] && product.price <= priceRange[1]
-    );
+    if (appliedPriceRange[0] !== 0 || appliedPriceRange[1] !== 1000) {
+      filtered = filtered.filter(product =>
+        product.price >= appliedPriceRange[0] && product.price <= appliedPriceRange[1]
+      );
+    }
 
     // Sort products
     filtered.sort((a, b) => {
-      switch (sortBy) {
+      switch (appliedSortBy) {
         case 'price-low':
           return a.price - b.price;
         case 'price-high':
@@ -205,20 +215,38 @@ export default function SearchScreen() {
   };
 
   const resetFilters = () => {
+    // Reset temporary states
     setSelectedCategory('All');
     setMaxDistance(10);
     setMinDiscount(0);
     setPriceRange([0, 1000]);
     setDistanceFilterEnabled(false);
-    setSortBy('distance'); // Reset sorting to default
+    setSortBy('distance');
+    // Reset applied states
+    setAppliedCategory('All');
+    setAppliedMaxDistance(10);
+    setAppliedMinDiscount(0);
+    setAppliedPriceRange([0, 1000]);
+    setAppliedDistanceEnabled(false);
+    setAppliedSortBy('distance');
+  };
+
+  const discardFilterChanges = () => {
+    // Restore temporary filter values to match currently applied values
+    setSelectedCategory(appliedCategory);
+    setMaxDistance(appliedMaxDistance);
+    setMinDiscount(appliedMinDiscount);
+    setPriceRange([...appliedPriceRange]);
+    setDistanceFilterEnabled(appliedDistanceEnabled);
+    setSortBy(appliedSortBy);
   };
 
   const getActiveFilterCount = () => {
     let count = 0;
-    if (selectedCategory !== 'All') count++;
-    if (maxDistance !== 10) count++;
-    if (minDiscount > 0) count++;
-    if (priceRange[0] !== 0 || priceRange[1] !== 1000) count++;
+    if (appliedCategory !== 'All') count++;
+    if (appliedDistanceEnabled && appliedMaxDistance !== 10) count++;
+    if (appliedMinDiscount > 0) count++;
+    if (appliedPriceRange[0] !== 0 || appliedPriceRange[1] !== 1000) count++;
     return count;
   };
 
@@ -280,13 +308,31 @@ export default function SearchScreen() {
 
   const getProductImage = (imageUrl) => {
     // If it's a Firebase Storage URL (HTTPS), return it as a URI
-    if (imageUrl && imageUrl.startsWith('https://')) {
+    if (imageUrl && (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'))) {
+      return { uri: imageUrl };
+    }
+    // If it starts with file:// (local URI), return it
+    if (imageUrl && imageUrl.startsWith('file://')) {
       return { uri: imageUrl };
     }
     // Try to match with local assets
     if (imageMap[imageUrl]) {
       return imageMap[imageUrl];
     }
+    // Try without .jpg extension if imageUrl doesn't end with it
+    if (imageUrl && !imageUrl.endsWith('.jpg') && imageMap[imageUrl + '.jpg']) {
+      return imageMap[imageUrl + '.jpg'];
+    }
+    // Try with .jpg extension if imageUrl ends with it but not found
+    if (imageUrl && imageUrl.endsWith('.jpg')) {
+      const nameWithoutExt = imageUrl.slice(0, -4);
+      if (imageMap[nameWithoutExt]) {
+        return imageMap[nameWithoutExt];
+      }
+    }
+    // Log unmatched images for debugging
+    console.log('Image not found in map:', imageUrl, 'Available keys:', Object.keys(imageMap));
+    // Return null to show placeholder instead of wrong image
     return null;
   };
 
@@ -301,6 +347,17 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Logo Header */}
+      <View style={styles.header}>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('../../assets/nearfind-logo.png')}
+            style={styles.logoSmall}
+          />
+          <Text style={styles.appName}>NearFind</Text>
+        </View>
+      </View>
+
       {/* Search Bar Section */}
       <View style={styles.searchSection}>
         <View style={styles.searchBar}>
@@ -312,6 +369,14 @@ export default function SearchScreen() {
             value={searchText}
             onChangeText={setSearchText}
           />
+          {searchText.length > 0 && (
+            <TouchableOpacity
+              onPress={() => setSearchText('')}
+              style={styles.clearButton}
+            >
+              <Icon name="close-circle" size={20} color="#999" />
+            </TouchableOpacity>
+          )}
         </View>
 
         <TouchableOpacity
@@ -370,15 +435,26 @@ export default function SearchScreen() {
               >
                 <View style={styles.productImage}>
                   {getProductImage(product.imageUrl) ? (
-                    <Image source={getProductImage(product.imageUrl)} style={styles.image} />
+                    <Image
+                      source={getProductImage(product.imageUrl)}
+                      style={[
+                        styles.image,
+                        (product.stockQuantity === 0 || product.status === 'out of stock') && styles.outOfStockImage
+                      ]}
+                    />
                   ) : (
                     <View style={styles.placeholder}>
                       <Icon name="image-outline" size={40} color="#ccc" />
                     </View>
                   )}
-                  {product.discount && (
+                  {product.discount && product.stockQuantity > 0 && (
                     <View style={styles.discountBadge}>
                       <Text style={styles.discountText}>-{product.discount}%</Text>
+                    </View>
+                  )}
+                  {(product.stockQuantity === 0 || product.status === 'out of stock') && (
+                    <View style={styles.outOfStockBadge}>
+                      <Text style={styles.outOfStockBadgeText}>OUT OF STOCK</Text>
                     </View>
                   )}
                   <TouchableOpacity
@@ -405,7 +481,7 @@ export default function SearchScreen() {
                 <View style={styles.distanceContainer}>
                   <Icon name="location-outline" size={12} color="#999" />
                   <Text style={styles.productDistance}>
-                    {product.distance > 0 ? `${product.distance} km` : 'Location unavailable'}
+                    {product.distance > 0 ? `${product.distance.toFixed(1)} km` : 'Location unavailable'}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -432,7 +508,7 @@ export default function SearchScreen() {
                     <View style={styles.shopDetailItem}>
                       <Icon name="location-outline" size={14} color="#666" />
                       <Text style={styles.shopDetailText}>
-                        {shop.distance > 0 ? `${shop.distance} km` : 'Location unavailable'}
+                        {shop.distance > 0 ? `${shop.distance.toFixed(1)} km` : 'Location unavailable'}
                       </Text>
                     </View>
                   </View>
@@ -461,13 +537,19 @@ export default function SearchScreen() {
         visible={showFilterModal}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setShowFilterModal(false)}
+        onRequestClose={() => {
+          discardFilterChanges();
+          setShowFilterModal(false);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.filterModal}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filters</Text>
-              <TouchableOpacity onPress={() => setShowFilterModal(false)}>
+              <TouchableOpacity onPress={() => {
+                discardFilterChanges();
+                setShowFilterModal(false);
+              }}>
                 <Icon name="close" size={24} color="#333" />
               </TouchableOpacity>
             </View>
@@ -543,7 +625,29 @@ export default function SearchScreen() {
                 >
                   <Icon name="remove" size={20} color="#4CAF50" />
                 </TouchableOpacity>
-                <View style={styles.sliderTrack}>
+                <View
+                  style={styles.sliderTrack}
+                  {...PanResponder.create({
+                    onStartShouldSetPanResponder: () => true,
+                    onMoveShouldSetPanResponder: () => true,
+                    onPanResponderGrant: (e) => {
+                      e.target.measure((x, y, width, height, pageX, pageY) => {
+                        const touchX = e.nativeEvent.pageX - pageX;
+                        const percentage = Math.max(0, Math.min(1, touchX / width));
+                        const newValue = Math.round(percentage * 20);
+                        setMaxDistance(Math.max(1, Math.min(20, newValue || 1)));
+                      });
+                    },
+                    onPanResponderMove: (e) => {
+                      e.target.measure((x, y, width, height, pageX, pageY) => {
+                        const touchX = e.nativeEvent.pageX - pageX;
+                        const percentage = Math.max(0, Math.min(1, touchX / width));
+                        const newValue = Math.round(percentage * 20);
+                        setMaxDistance(Math.max(1, Math.min(20, newValue || 1)));
+                      });
+                    },
+                  }).panHandlers}
+                >
                   <View style={[styles.sliderFill, { width: `${(maxDistance / 20) * 100}%` }]} />
                 </View>
                 <TouchableOpacity
@@ -563,7 +667,29 @@ export default function SearchScreen() {
                 >
                   <Icon name="remove" size={20} color="#4CAF50" />
                 </TouchableOpacity>
-                <View style={styles.sliderTrack}>
+                <View
+                  style={styles.sliderTrack}
+                  {...PanResponder.create({
+                    onStartShouldSetPanResponder: () => true,
+                    onMoveShouldSetPanResponder: () => true,
+                    onPanResponderGrant: (e) => {
+                      e.target.measure((x, y, width, height, pageX, pageY) => {
+                        const touchX = e.nativeEvent.pageX - pageX;
+                        const percentage = Math.max(0, Math.min(1, touchX / width));
+                        const newValue = Math.round(percentage * 10) * 5;
+                        setMinDiscount(Math.max(0, Math.min(50, newValue)));
+                      });
+                    },
+                    onPanResponderMove: (e) => {
+                      e.target.measure((x, y, width, height, pageX, pageY) => {
+                        const touchX = e.nativeEvent.pageX - pageX;
+                        const percentage = Math.max(0, Math.min(1, touchX / width));
+                        const newValue = Math.round(percentage * 10) * 5;
+                        setMinDiscount(Math.max(0, Math.min(50, newValue)));
+                      });
+                    },
+                  }).panHandlers}
+                >
                   <View style={[styles.sliderFill, { width: `${(minDiscount / 50) * 100}%` }]} />
                 </View>
                 <TouchableOpacity
@@ -620,7 +746,13 @@ export default function SearchScreen() {
               <TouchableOpacity
                 style={[styles.modalButton, styles.applyButton]}
                 onPress={() => {
-                  setDistanceFilterEnabled(true);
+                  // Apply the temporary filter values to the applied states
+                  setAppliedCategory(selectedCategory);
+                  setAppliedMaxDistance(maxDistance);
+                  setAppliedMinDiscount(minDiscount);
+                  setAppliedPriceRange([...priceRange]);
+                  setAppliedSortBy(sortBy);
+                  setAppliedDistanceEnabled(true);
                   setShowFilterModal(false);
                 }}
               >
@@ -648,11 +780,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
   },
+  header: {
+    backgroundColor: '#fff',
+    paddingTop: 50,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  logoSmall: {
+    width: 32,
+    height: 32,
+    resizeMode: 'contain',
+  },
+  appName: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4CAF50',
+  },
   searchSection: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    paddingTop: 50,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
@@ -674,6 +828,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#333',
+  },
+  clearButton: {
+    padding: 4,
+    marginLeft: 4,
   },
   sortButton: {
     width: 48,
@@ -781,6 +939,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+  },
+  outOfStockImage: {
+    opacity: 0.5,
+  },
+  outOfStockBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  outOfStockBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
   discountText: {
     fontSize: 12,

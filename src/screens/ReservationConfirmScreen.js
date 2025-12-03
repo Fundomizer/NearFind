@@ -20,10 +20,20 @@ export default function ReservationConfirmScreen({ route, navigation }) {
   };
 
   const getProductImage = (imageUrl) => {
+    // If it's a Firebase Storage URL (HTTPS), return it as a URI
+    if (imageUrl && (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'))) {
+      return { uri: imageUrl };
+    }
+    // If it starts with file:// (local URI), return it
+    if (imageUrl && imageUrl.startsWith('file://')) {
+      return { uri: imageUrl };
+    }
+    // Try to match with local assets
     if (imageMap[imageUrl]) {
       return imageMap[imageUrl];
     }
-    return null;
+    // Return default fallback
+    return imageMap['honey.jpg'];
   };
 
   // Parse store hours (e.g., "8:00 AM - 5:00 PM")
@@ -99,8 +109,8 @@ export default function ReservationConfirmScreen({ route, navigation }) {
           {
             text: 'View Reservations',
             onPress: () => {
-              // Navigate back to root then to Reservations tab
-              navigation.getParent()?.navigate('Reservations');
+              // Navigate back to root then to Reservations tab, showing active reservations
+              navigation.getParent()?.navigate('Reservations', { screen: 'Reservations', params: { initialTab: 'active' } });
             }
           },
           {
@@ -172,7 +182,6 @@ export default function ReservationConfirmScreen({ route, navigation }) {
 
         {/* Pickup Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Pickup Information</Text>
           <View style={styles.pickupCard}>
             <View style={styles.pickupRow}>
               <Icon name="storefront" size={20} color="#4CAF50" />
@@ -186,29 +195,52 @@ export default function ReservationConfirmScreen({ route, navigation }) {
               <View style={styles.pickupInfo}>
                 <Text style={styles.pickupLabel}>Distance</Text>
                 <Text style={styles.pickupValue}>
-                  {product.distance > 0 ? `${product.distance} km away` : 'Location unavailable'}
+                  {product.distance > 0 ? `${product.distance.toFixed(1)} km away` : 'Location unavailable'}
                 </Text>
               </View>
             </View>
-            <TouchableOpacity
-              style={styles.pickupRow}
-              onPress={() => setShowTimePicker(true)}
-            >
-              <Icon name="time" size={20} color="#4CAF50" />
-              <View style={styles.pickupInfo}>
-                <Text style={styles.pickupLabel}>Pickup Time</Text>
-                <Text style={[styles.pickupValue, !selectedPickupTime && styles.pickupPlaceholder]}>
-                  {selectedPickupTime || 'Select pickup time'}
-                </Text>
-              </View>
-              <Icon name="chevron-forward" size={20} color="#999" />
-            </TouchableOpacity>
             <View style={styles.storeHoursRow}>
               <Icon name="information-circle-outline" size={16} color="#666" />
               <Text style={styles.storeHoursText}>
                 Store Hours: {product.shopHours || 'Not available'}
               </Text>
             </View>
+          </View>
+
+          {/* Highlighted Pickup Time Selection */}
+          <View style={styles.pickupTimeSection}>
+            <View style={styles.pickupTimeHeader}>
+              <Icon name="time" size={24} color="#4CAF50" />
+              <Text style={styles.pickupTimeTitle}>Select Pickup Time</Text>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.pickupTimeButton,
+                !selectedPickupTime && styles.pickupTimeButtonEmpty
+              ]}
+              onPress={() => setShowTimePicker(true)}
+            >
+              <View style={styles.pickupTimeContent}>
+                {selectedPickupTime ? (
+                  <>
+                    <Icon name="checkmark-circle" size={28} color="#4CAF50" />
+                    <Text style={styles.selectedTimeText}>{selectedPickupTime}</Text>
+                  </>
+                ) : (
+                  <>
+                    <Icon name="alarm-outline" size={28} color="#999" />
+                    <Text style={styles.selectTimePlaceholder}>Tap to select pickup time</Text>
+                  </>
+                )}
+              </View>
+              <Icon name="chevron-forward" size={24} color={selectedPickupTime ? "#4CAF50" : "#999"} />
+            </TouchableOpacity>
+            {!selectedPickupTime && (
+              <View style={styles.requiredBadge}>
+                <Icon name="alert-circle" size={16} color="#FF5252" />
+                <Text style={styles.requiredText}>Required</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -462,6 +494,77 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
+  },
+  pickupTimeSection: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 16,
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  pickupTimeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  pickupTimeTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  pickupTimeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 2,
+    borderColor: '#4CAF50',
+  },
+  pickupTimeButtonEmpty: {
+    backgroundColor: '#f5f5f5',
+    borderColor: '#ddd',
+    borderStyle: 'dashed',
+  },
+  pickupTimeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  selectedTimeText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#4CAF50',
+  },
+  selectTimePlaceholder: {
+    fontSize: 16,
+    color: '#999',
+    fontStyle: 'italic',
+  },
+  requiredBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#FFEBEE',
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  requiredText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FF5252',
   },
   notesCard: {
     backgroundColor: '#FFF9E6',

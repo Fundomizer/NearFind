@@ -15,11 +15,18 @@ export default function SignupScreen() {
     const [conpassword, setConPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [userRole, setUserRole] = useState('customer'); // 'customer' or 'business'
+    const [businessName, setBusinessName] = useState(''); // For business accounts
 
     const handleSignup = async () => {
         // Validation
         if (!email || !password || !conpassword) {
             Alert.alert("Error", "Please fill in all fields");
+            return;
+        }
+
+        // Additional validation for business accounts
+        if (userRole === 'business' && !businessName.trim()) {
+            Alert.alert("Error", "Please enter your business name");
             return;
         }
 
@@ -43,7 +50,7 @@ export default function SignupScreen() {
 
         // Firebase signup with role for both customer and business
         setLoading(true);
-        const result = await signUp(email, password, userRole);
+        const result = await signUp(email, password, userRole, businessName.trim());
         setLoading(false);
 
         if (result.success) {
@@ -73,6 +80,9 @@ export default function SignupScreen() {
                 contentContainerStyle={{ flexGrow: 1 }}
             >
                 <View style={styles.logoContainer}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Icon name="arrow-back" size={28} color="#fff" />
+                    </TouchableOpacity>
                     <Image source={require("../../assets/nearfind-logo.png")} style={styles.logo}></Image>
                     <Text style={[textStyle.h1, { color: '#ffffffff' }]}>NearFind</Text>
                 </View>
@@ -139,7 +149,19 @@ export default function SignupScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
-                    <Text style={textStyle.linkText}>Terms and conditons</Text>
+                    {userRole === 'business' && (
+                        <View>
+                            <Text style={textStyle.normalText}>Business Name</Text>
+                            <TextInput
+                                placeholder="Enter your business name"
+                                style={[styles.textInput, textStyle.normalText]}
+                                onChangeText={setBusinessName}
+                                value={businessName}
+                                autoCapitalize="words"
+                            />
+                        </View>
+                    )}
+                    <Text style={textStyle.linkText}>Terms and conditions</Text>
                     {loading ? (
                         <ActivityIndicator size="large" color="#4CAF50" />
                     ) : (
@@ -168,7 +190,18 @@ const styles = StyleSheet.create({
         flex: 7,
         flexDirection: 'row',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        position: 'relative',
+    },
+    backButton: {
+        position: 'absolute',
+        left: 20,
+        top: 20,
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
     },
     logo: {
         aspectRatio: 1,

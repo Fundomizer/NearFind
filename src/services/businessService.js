@@ -33,11 +33,23 @@ export const getBusinessProfile = async () => {
     if (businessDoc.exists()) {
       return { success: true, data: { id: businessDoc.id, ...businessDoc.data() } };
     } else {
+      // Get business name from user profile if available
+      let businessName = 'My Business';
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists() && userDoc.data().businessName) {
+          businessName = userDoc.data().businessName;
+        }
+      } catch (error) {
+        console.log('Could not fetch user profile, using default business name');
+      }
+
       // Create default business profile using setDoc (not updateDoc)
       const defaultProfile = {
         userId: user.uid,
         userEmail: user.email,
-        companyName: 'My Business',
+        companyName: businessName,
         logo: null,
         location: null,
         latitude: null,

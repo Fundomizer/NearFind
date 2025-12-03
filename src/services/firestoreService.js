@@ -44,6 +44,16 @@ export const getProducts = async () => {
   }
 };
 
+// Delete a product
+export const deleteProduct = async (productId) => {
+  try {
+    await deleteDoc(doc(db, 'products', productId));
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+};
+
 // Get products by location (within certain distance)
 export const getProductsByLocation = async (userLat, userLng, maxDistance = 10) => {
   try {

@@ -30,14 +30,19 @@ export default function ProductDetailsScreen({ route, navigation }) {
 
   const getProductImage = (imageUrl) => {
     // If it's a Firebase Storage URL (HTTPS), return it as a URI
-    if (imageUrl && imageUrl.startsWith('https://')) {
+    if (imageUrl && (imageUrl.startsWith('https://') || imageUrl.startsWith('http://'))) {
+      return { uri: imageUrl };
+    }
+    // If it starts with file:// (local URI), return it
+    if (imageUrl && imageUrl.startsWith('file://')) {
       return { uri: imageUrl };
     }
     // Try to match with local assets
     if (imageMap[imageUrl]) {
       return imageMap[imageUrl];
     }
-    return null;
+    // Return default fallback
+    return imageMap['honey.jpg'];
   };
 
   const openMaps = () => {
@@ -191,7 +196,13 @@ export default function ProductDetailsScreen({ route, navigation }) {
         {/* Product Image */}
         <View style={styles.imageContainer}>
           {getProductImage(product.imageUrl) ? (
-            <Image source={getProductImage(product.imageUrl)} style={styles.productImage} />
+            <Image
+              source={getProductImage(product.imageUrl)}
+              style={[
+                styles.productImage,
+                product.stockQuantity === 0 && styles.outOfStockImage
+              ]}
+            />
           ) : (
             <View style={styles.placeholderImage}>
               <Icon name="image-outline" size={80} color="#ccc" />
@@ -223,7 +234,7 @@ export default function ProductDetailsScreen({ route, navigation }) {
           <View style={styles.distanceRow}>
             <Icon name="location-outline" size={16} color="#666" />
             <Text style={styles.distanceText}>
-              {product.distance > 0 ? `${product.distance} km away` : 'Location unavailable'}
+              {product.distance > 0 ? `${product.distance.toFixed(1)} km away` : 'Location unavailable'}
             </Text>
           </View>
 
@@ -290,7 +301,7 @@ export default function ProductDetailsScreen({ route, navigation }) {
             <View style={styles.shopDetail}>
               <Icon name="location" size={16} color="#666" />
               <Text style={styles.shopDetailText}>
-                {product.distance > 0 ? `${product.distance} km from you` : 'Distance unavailable'}
+                {product.distance > 0 ? `${product.distance.toFixed(1)} km from you` : 'Distance unavailable'}
               </Text>
             </View>
 
@@ -409,6 +420,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+  outOfStockImage: {
+    opacity: 0.5,
   },
   placeholderImage: {
     width: '100%',

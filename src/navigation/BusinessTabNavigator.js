@@ -1,12 +1,26 @@
-import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Ionicons';
 
 // Import screens
 import BusinessDashboardScreen from '../screens/BusinessDashboardScreen';
+import BusinessChatScreen from '../screens/BusinessChatScreen';
+import BusinessIndividualChatScreen from '../screens/BusinessIndividualChatScreen';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
+
+// Create a stack navigator for business screens
+function BusinessStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="BusinessHome" component={BusinessDashboardScreen} />
+      <Stack.Screen name="BusinessChatList" component={BusinessChatScreen} />
+      <Stack.Screen name="BusinessIndividualChat" component={BusinessIndividualChatScreen} />
+    </Stack.Navigator>
+  );
+}
 
 export default function BusinessTabNavigator() {
   const insets = useSafeAreaInsets();
@@ -37,7 +51,7 @@ export default function BusinessTabNavigator() {
     >
       <Tab.Screen
         name="Business"
-        component={BusinessDashboardScreen}
+        component={BusinessStack}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Icon name="storefront" size={size} color={color} />

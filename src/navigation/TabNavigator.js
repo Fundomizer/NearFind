@@ -1,4 +1,3 @@
-import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '@expo/vector-icons/Ionicons';
@@ -56,6 +55,13 @@ export default function TabNavigator() {
             <Icon name="basket" size={size} color={color} />
           ),
         }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            navigation.navigate('Market', {
+              screen: 'MarketHome',
+            });
+          },
+        })}
       />
       <Tab.Screen
         name="Reservations"

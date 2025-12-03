@@ -1,4 +1,3 @@
-import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MarketScreen from '../screens/MarketScreen';
 import ProductDetailsScreen from '../screens/ProductDetailsScreen';
@@ -13,15 +12,6 @@ export default function MarketStackNavigator() {
       screenOptions={{
         headerShown: false,
       }}
-      listeners={({ navigation }) => ({
-        tabPress: (e) => {
-          e.preventDefault();
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'MarketHome' }],
-          });
-        },
-      })}
     >
       <Stack.Screen name="MarketHome" component={MarketScreen} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />

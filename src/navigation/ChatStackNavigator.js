@@ -1,4 +1,3 @@
-import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ChatScreen from '../screens/ChatScreen';
 import IndividualChatScreen from '../screens/IndividualChatScreen';

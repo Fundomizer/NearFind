@@ -234,3 +234,161 @@ export const markConversationAsRead = async (conversationId) => {
     return { success: false, error: error.message };
   }
 };
+
+// ==================== BUSINESS FUNCTIONS ====================
+
+// Get all conversations for a business (where shopId matches the business)
+export const getBusinessConversations = async (shopId) => {
+  try {
+    if (!shopId) {
+      return { success: false, error: 'Shop ID is required' };
+    }
+
+    const q = query(
+      collection(db, 'conversations'),
+      where('shopId', '==', shopId)
+    );
+
+    const querySnapshot = await getDocs(q);
+    const conversations = [];
+
+    querySnapshot.forEach((doc) => {
+      conversations.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    // Sort by lastMessageTime
+    conversations.sort((a, b) => {
+      const timeA = a.lastMessageTime?.toMillis ? a.lastMessageTime.toMillis() : 0;
+      const timeB = b.lastMessageTime?.toMillis ? b.lastMessageTime.toMillis() : 0;
+      return timeB - timeA;
+    });
+
+    return { success: true, data: conversations };
+  } catch (error) {
+    console.error('Error getting business conversations:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Subscribe to business conversations (real-time)
+export const subscribeToBusinessConversations = (shopId, callback) => {
+  try {
+    if (!shopId) {
+      console.error('Shop ID is required');
+      return null;
+    }
+
+    const q = query(
+      collection(db, 'conversations'),
+      where('shopId', '==', shopId)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const conversations = [];
+      snapshot.forEach((doc) => {
+        conversations.push({
+          id: doc.id,
+          ...doc.data(),
+        });
+      });
+
+      // Sort by lastMessageTime
+      conversations.sort((a, b) => {
+        const timeA = a.lastMessageTime?.toMillis ? a.lastMessageTime.toMillis() : 0;
+        const timeB = b.lastMessageTime?.toMillis ? b.lastMessageTime.toMillis() : 0;
+        return timeB - timeA;
+      });
+
+      callback(conversations);
+    });
+
+    return unsubscribe;
+  } catch (error) {
+    console.error('Error subscribing to business conversations:', error);
+    return null;
+  }
+};
+
+// Subscribe to messages for business (no user verification needed)
+export const subscribeToBusinessMessages = (conversationId, callback) => {
+  try {
+    if (!conversationId) {
+      console.error('Conversation ID is required');
+      return null;
+    }
+
+    const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+    const q = query(messagesRef, orderBy('timestamp', 'asc'));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const messages = [];
+      snapshot.forEach((doc) => {
+        messages.push({
+          id: doc.id,
+          ...doc.data(),
+        });
+      });
+      callback(messages);
+    });
+
+    return unsubscribe;
+  } catch (error) {
+    console.error('Error subscribing to business messages:', error);
+    return null;
+  }
+};
+
+// Send message as business
+export const sendBusinessMessage = async (conversationId, messageText) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      return { success: false, error: 'User not authenticated' };
+    }
+
+    // Get conversation to verify business owns it
+    const conversationRef = doc(db, 'conversations', conversationId);
+    const conversationDoc = await getDoc(conversationRef);
+
+    if (!conversationDoc.exists()) {
+      return { success: false, error: 'Conversation not found' };
+    }
+
+    const conversationData = conversationDoc.data();
+
+    // Verify the business user ID matches the shopId in the conversation
+    if (conversationData.shopId !== user.uid) {
+      return { success: false, error: 'Access denied to this conversation' };
+    }
+
+    const messageData = {
+      conversationId,
+      text: messageText,
+      sender: 'shop',
+      senderId: conversationData.shopName,
+      timestamp: Timestamp.now(),
+      read: false,
+    };
+
+    // Add message to messages subcollection
+    const messageRef = await addDoc(
+      collection(db, 'conversations', conversationId, 'messages'),
+      messageData
+    );
+
+    // Update conversation's last message
+    await updateDoc(conversationRef, {
+      lastMessage: messageText,
+      lastMessageTime: Timestamp.now(),
+      unreadCount: 1, // Customer should see unread count
+    });
+
+    return { success: true, messageId: messageRef.id };
+  } catch (error) {
+    console.error('Error sending business message:', error);
+    return { success: false, error: error.message };
+  }
+};

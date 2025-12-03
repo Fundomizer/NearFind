@@ -5,11 +5,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { textStyle } from "../styles/TextStyles"
 import { useNavigation } from "@react-navigation/native";
 import { signIn } from "../services/authService";
+import Icon from '@expo/vector-icons/Ionicons';
 
 /**
- * 
+ *
  * @param {function} setIsLoggedIn memory address of the "setIsLoggedIn"
- * @returns 
+ * @returns
  */
 export default function LoginScreen({ setIsLoggedIn }) {
 
@@ -60,6 +61,9 @@ export default function LoginScreen({ setIsLoggedIn }) {
                 contentContainerStyle={{ flexGrow: 1 }}
             >
                 <View style={styles.logoContainer}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Icon name="arrow-back" size={28} color="#fff" />
+                    </TouchableOpacity>
                     <Image source={require("../../assets/nearfind-logo.png")} style={styles.logo}></Image>
                     <Text style={[textStyle.h1, { color: '#ffffffff' }]}>NearFind</Text>
                 </View>
@@ -71,7 +75,6 @@ export default function LoginScreen({ setIsLoggedIn }) {
                         <Text style={textStyle.normalText}>Email</Text>
                         <TextInput placeholder="Enter your email" style={[styles.textInput, textStyle.normalText]} onChangeText={setEmail} keyboardType="email-address"></TextInput>
                     </View>
-                    <Text style={textStyle.mutedText}>Forgot Password? <Text style={textStyle.linkText}>Click Here</Text></Text>
                     <View>
                         <Text style={textStyle.normalText}>Password</Text>
                         <TextInput
@@ -79,7 +82,10 @@ export default function LoginScreen({ setIsLoggedIn }) {
                             secureTextEntry={true}>
                         </TextInput>
                     </View>
-                    <Text style={textStyle.linkText}>Terms and conditons</Text>
+                    <TouchableOpacity style={styles.forgotPasswordContainer}>
+                        <Text style={textStyle.linkText}>Forgot Password?</Text>
+                    </TouchableOpacity>
+                    <Text style={textStyle.linkText}>Terms and conditions</Text>
                     {loading ? (
                         <ActivityIndicator size="large" color="#4CAF50" />
                     ) : (
@@ -108,12 +114,28 @@ const styles = StyleSheet.create({
         flex: 7,
         flexDirection: 'row',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        position: 'relative',
+    },
+    backButton: {
+        position: 'absolute',
+        left: 20,
+        top: 20,
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
     },
     logo: {
         aspectRatio: 1,
         minWidth: 50,
         maxWidth: 100,
+    },
+    forgotPasswordContainer: {
+        alignSelf: 'flex-end',
+        marginTop: -5,
+        marginBottom: 5,
     },
     textInput: {
         borderWidth: 1,          // thickness of border

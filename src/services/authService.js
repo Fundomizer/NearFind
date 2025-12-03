@@ -8,18 +8,26 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 
 // Sign up with email and password
-export const signUp = async (email, password, role = 'customer') => {
+export const signUp = async (email, password, role = 'customer', businessName = '') => {
   try {
     // Create auth user
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Store user data in Firestore
-    await setDoc(doc(db, 'users', user.uid), {
+    // Prepare user data
+    const userData = {
       email: user.email,
       role: role, // 'customer' or 'business'
       createdAt: new Date().toISOString(),
-    });
+    };
+
+    // Add business name if role is business
+    if (role === 'business' && businessName) {
+      userData.businessName = businessName;
+    }
+
+    // Store user data in Firestore
+    await setDoc(doc(db, 'users', user.uid), userData);
 
     return { success: true, user: user };
   } catch (error) {
