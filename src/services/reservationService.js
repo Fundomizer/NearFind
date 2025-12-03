@@ -1,5 +1,6 @@
 import { db, auth } from '../config/firebase';
 import { collection, addDoc, getDocs, query, where, orderBy, updateDoc, doc, Timestamp, getDoc, onSnapshot } from 'firebase/firestore';
+import { getOrCreateConversation, sendMessage } from './messageService';
 
 // Create a new reservation
 export const createReservation = async (productData, quantity, pickupTime) => {
@@ -33,6 +34,7 @@ export const createReservation = async (productData, quantity, pickupTime) => {
       productImage: productData.imageUrl,
       productStatus: productData.status || 'available', // Track if it's a pre-order
       shopName: productData.shopName,
+      shopId: productData.shopId,
       shopLatitude: productData.latitude,
       shopLongitude: productData.longitude,
       shopHours: productData.shopHours,
@@ -44,6 +46,25 @@ export const createReservation = async (productData, quantity, pickupTime) => {
     };
 
     const docRef = await addDoc(collection(db, 'reservations'), reservationData);
+
+    // Send automatic message to seller
+    try {
+      const uniqueShopId = productData.shopId || productData.shopName.replace(/\s+/g, '_').toLowerCase();
+      const conversationResult = await getOrCreateConversation(productData.shopName, uniqueShopId);
+
+      if (conversationResult.success) {
+        const isPreOrder = productData.status === 'pre-order';
+        const messageType = isPreOrder ? 'pre-order' : 'reservation';
+        const pickupInfo = pickupTime ? `\nPickup Time: ${pickupTime}` : '';
+
+        const messageText = `🛒 New ${isPreOrder ? 'Pre-Order' : 'Reservation'} Confirmation\n\nProduct: ${productData.name}\nQuantity: ${quantity}\nTotal: ₱${(productData.price * quantity).toFixed(2)}${pickupInfo}\n\nCustomer: ${user.email}`;
+
+        await sendMessage(conversationResult.conversationId, productData.shopName, messageText, 'user');
+      }
+    } catch (msgError) {
+      console.error('Error sending notification message:', msgError);
+      // Don't fail the reservation if message fails
+    }
 
     // Decrease stock quantity
     const newStock = currentStock - quantity;
