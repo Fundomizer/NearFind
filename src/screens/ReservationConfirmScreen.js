@@ -109,8 +109,8 @@ export default function ReservationConfirmScreen({ route, navigation }) {
           {
             text: 'View Reservations',
             onPress: () => {
-              // Navigate back to root then to Reservations tab
-              navigation.getParent()?.navigate('Reservations');
+              // Navigate back to root then to Reservations tab, showing active reservations
+              navigation.getParent()?.navigate('Reservations', { screen: 'Reservations', params: { initialTab: 'active' } });
             }
           },
           {

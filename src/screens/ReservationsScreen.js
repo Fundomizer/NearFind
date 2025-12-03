@@ -3,10 +3,19 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Alert, ActivityIn
 import Icon from '@expo/vector-icons/Ionicons';
 import { subscribeToReservations, cancelReservation } from '../services/reservationService';
 
-export default function ReservationsScreen({ navigation }) {
+export default function ReservationsScreen({ navigation, route }) {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('active'); // 'active' or 'history'
+
+  // Handle navigation parameter to set initial tab
+  useEffect(() => {
+    if (route?.params?.initialTab) {
+      setActiveTab(route.params.initialTab);
+      // Clear the param after using it
+      navigation.setParams({ initialTab: undefined });
+    }
+  }, [route?.params?.initialTab]);
 
   useEffect(() => {
     // Subscribe to real-time reservation updates
