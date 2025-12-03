@@ -434,9 +434,15 @@ export default function SearchScreen() {
                       <Icon name="image-outline" size={40} color="#ccc" />
                     </View>
                   )}
-                  {product.discount && product.stockQuantity > 0 && (
+                  {product.discount && product.stockQuantity > 0 && product.status !== 'pre-order' && (
                     <View style={styles.discountBadge}>
                       <Text style={styles.discountText}>-{product.discount}%</Text>
+                    </View>
+                  )}
+                  {product.status === 'pre-order' && (
+                    <View style={styles.preOrderBadge}>
+                      <Icon name="time" size={12} color="#fff" />
+                      <Text style={styles.preOrderBadgeText}>PRE-ORDER</Text>
                     </View>
                   )}
                   {(product.stockQuantity === 0 || product.status === 'out of stock') && (
@@ -926,6 +932,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+  },
+  preOrderBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#FF9800',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  preOrderBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#fff',
   },
   outOfStockImage: {
     opacity: 0.5,

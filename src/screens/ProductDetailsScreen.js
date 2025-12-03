@@ -275,16 +275,24 @@ export default function ProductDetailsScreen({ route, navigation }) {
           <View style={styles.stockSection}>
             <View style={styles.stockInfo}>
               <Icon
-                name={product.stockQuantity > 0 ? "checkmark-circle" : "close-circle"}
+                name={product.status === 'pre-order' ? "time" : (product.stockQuantity > 0 ? "checkmark-circle" : "close-circle")}
                 size={20}
-                color={product.stockQuantity > 0 ? "#4CAF50" : "#FF5252"}
+                color={product.status === 'pre-order' ? "#FF9800" : (product.stockQuantity > 0 ? "#4CAF50" : "#FF5252")}
               />
-              <Text style={[styles.stockText, product.stockQuantity === 0 && styles.outOfStock]}>
-                {product.stockQuantity > 0 ? 'In Stock' : 'Out of Stock'}
+              <Text style={[
+                styles.stockText,
+                product.stockQuantity === 0 && styles.outOfStock,
+                product.status === 'pre-order' && styles.preOrderText
+              ]}>
+                {product.status === 'pre-order' ? 'Pre-Order' : (product.stockQuantity > 0 ? 'In Stock' : 'Out of Stock')}
               </Text>
             </View>
-            {product.stockQuantity > 0 && (
-              <Text style={styles.stockAvailable}>{maxStock} available</Text>
+            {product.status === 'pre-order' ? (
+              <Text style={styles.preOrderNote}>Order now, available soon</Text>
+            ) : (
+              product.stockQuantity > 0 && (
+                <Text style={styles.stockAvailable}>{maxStock} available</Text>
+              )
             )}
           </View>
         </View>

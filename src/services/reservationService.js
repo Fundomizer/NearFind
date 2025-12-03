@@ -31,6 +31,7 @@ export const createReservation = async (productData, quantity, pickupTime) => {
       productName: productData.name,
       productPrice: productData.price,
       productImage: productData.imageUrl,
+      productStatus: productData.status || 'available', // Track if it's a pre-order
       shopName: productData.shopName,
       shopLatitude: productData.latitude,
       shopLongitude: productData.longitude,

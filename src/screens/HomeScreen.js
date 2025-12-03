@@ -302,9 +302,15 @@ export default function HomeScreen() {
                   (item.stockQuantity === 0 || item.status === 'out of stock') && styles.outOfStockImage
                 ]}
             />
-            {item.discount > 0 && item.stockQuantity > 0 && (
+            {item.discount > 0 && item.stockQuantity > 0 && item.status !== 'pre-order' && (
                 <View style={styles.discountBadge}>
                     <Text style={styles.discountText}>-{item.discount}%</Text>
+                </View>
+            )}
+            {item.status === 'pre-order' && (
+                <View style={styles.preOrderBadge}>
+                    <Icon name="time" size={12} color="#fff" />
+                    <Text style={styles.preOrderBadgeText}>PRE-ORDER</Text>
                 </View>
             )}
             {(item.stockQuantity === 0 || item.status === 'out of stock') && (
@@ -335,11 +341,16 @@ export default function HomeScreen() {
                 style={[
                   styles.productImage,
                   (item.stockQuantity === 0 || item.status === 'out of stock') && styles.outOfStockImage
-                ]}
-            />
-            {item.discount > 0 && item.stockQuantity > 0 && (
+                ]}  />
+            {item.discount > 0 && item.stockQuantity > 0 && item.status !== 'pre-order' && (
                 <View style={styles.discountBadge}>
                     <Text style={styles.discountText}>-{item.discount}%</Text>
+                </View>
+            )}
+            {item.status === 'pre-order' && (
+                <View style={styles.preOrderBadge}>
+                    <Icon name="time" size={12} color="#fff" />
+                    <Text style={styles.preOrderBadgeText}>PRE-ORDER</Text>
                 </View>
             )}
             {(item.stockQuantity === 0 || item.status === 'out of stock') && (
@@ -769,6 +780,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,
+  },
+  preOrderBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: '#FF9800',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  preOrderBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#fff',
   },
   outOfStockImage: {
     opacity: 0.5,

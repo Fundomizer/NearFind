@@ -222,7 +222,15 @@ export default function ReservationsScreen({ navigation, route }) {
                 <View style={styles.reservationHeader}>
                   <Icon name="calendar" size={24} color="#4CAF50" />
                   <View style={styles.reservationHeaderInfo}>
-                    <Text style={styles.productName}>{reservation.productName}</Text>
+                    <View style={styles.productNameRow}>
+                      <Text style={styles.productName}>{reservation.productName}</Text>
+                      {reservation.productStatus === 'pre-order' && (
+                        <View style={styles.preOrderBadge}>
+                          <Icon name="time" size={12} color="#fff" />
+                          <Text style={styles.preOrderBadgeText}>PRE-ORDER</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={styles.shopName}>{reservation.shopName}</Text>
                   </View>
                 </View>
@@ -452,11 +460,30 @@ const styles = StyleSheet.create({
   reservationHeaderInfo: {
     flex: 1,
   },
-  productName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#333',
+  productNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 4,
+  },
+  productName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  preOrderBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF9800',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  preOrderBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#fff',
   },
   shopName: {
     fontSize: 14,
