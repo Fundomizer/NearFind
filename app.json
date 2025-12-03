@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "TechnoMVP_React-Native",
-    "slug": "TechnoMVP_React-Native",
+    "name": "NearFind",
+    "slug": "nearfind",
+    "owner": "hotdoglover12345",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -26,6 +27,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d9ed60ef-edcd-4e2f-a6d5-fdf15acdfcd5"
+      }
     }
   }
 }
