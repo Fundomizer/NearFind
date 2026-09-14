@@ -4,7 +4,18 @@ NearFind is a mobile platform designed to connect consumers with nearby local sh
 
 ## Project dependencies
 
-- React native packages. Can be installed via `npm install expo`
+All dependencies can be installed via npm install
+
+- React native packages. Can be installed via:
+
+  ```
+  npm install expo
+  ```
+
+- [React native keyboard aware scroll view](https://github.com/APSL/react-native-keyboard-aware-scroll-view), an external react native package that provides an external component. Install via:
+  ```
+  npm i react-native-keyboard-aware-scroll-view --save
+  ```
 
 ## Running the project
 

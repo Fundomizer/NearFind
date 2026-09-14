@@ -1,7 +1,7 @@
 /.vs
 /obj
 /bin
-/vscode
+/.vscode
 /Platforms/*/bin/
 /Platforms/*/obj/
 /*.user
